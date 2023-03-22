@@ -23,9 +23,12 @@ extern "C" void app_main(void) {
   // or
   initialize_logging();
   event_initialize();
+  // initializer logger if necessary
+  // wifi /etc brought up by platform layer?
 
-  // TODO: register a callback handler for a reset
-  // esp_err_t esp_register_shutdown_handler(shutdown_handler_t handle);
+  // Now start the main FSM
+  
+
 
   vTaskSuspend(nullptr);
 }

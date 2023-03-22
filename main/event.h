@@ -2,7 +2,7 @@
 
 #include "defines.h"
 
-#include "freertos/FreeRTOS.h" 
+#include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
 #include <array>
@@ -60,10 +60,20 @@ enum class CallbackRespone : u8 {
 
 using OnEventCallback = CallbackRespone (*)(Event event, void* listener);
 
-typedef struct EventCallbackRegistry {
+struct EventCallbackRegistry {
   void* listener;  // potentially the class that will receive this callback
   OnEventCallback callback;  // cb that will receive the event
-} EventCallbackRegistry;
+  u32 id;
+};
+
+struct EventHandle {
+  EventType event_type;
+  u32 id;
+};
+
+// fwd dec of the handle guard specified in C file as the
+// anonynous namespace variable is accessed
+class HandleGuard;
 
 // // what size is std:;size_t on the esp32? whats the native type?
 // enum class EventPriority : u8 {
@@ -95,38 +105,13 @@ struct EventSystemState {
 
 bool event_initialize();
 
-/**
- * Register to listen for when events are sent with the provided code. Events
- * with duplicate listener/callback combos will not be registered again and will
- * cause this to return FALSE.
- * @param code The event code to listen for.
- * @param listener A pointer to a listener instance. Can be 0/NULL.
- * @param on_event The callback function pointer to be invoked when the event
- * code is fired.
- * @returns TRUE if the event is successfully registered; otherwise false.
- */
-bool event_register(EventType event_type,
-                    void* listener,
-                    OnEventCallback callback);
+[[nodiscard]] std::optional<EventCallbackHandle>
+event_register(EventType event_type, void* listener, OnEventCallback callback);
 
-/**
- * Unregister from listening for when events are sent with the provided code. If
- * no matching registration is found, this function returns FALSE.
- * @param code The event code to stop listening for.
- * @param listener A pointer to a listener instance. Can be 0/NULL.
- * @param on_event The callback function pointer to be unregistered.
- * @returns TRUE if the event is successfully unregistered; otherwise false.
- */
-bool event_unregister(u16 code, void* listener, OnEventCallback callback);
+bool event_unregister(EventHandle handle);
 
-/**
- * Fires an event to listeners of the given code. If an event callback returns
- * TRUE, the event is considered handled and is not passed on to any more
- * listeners.
- * @param event The event data.
- * @param sender A pointer to the sender. Can be 0/NULL.
- * @returns TRUE if handled, otherwise FALSE.
- */
 bool event_fire(Event event, void* sender);
+
+void event_loop(void* params);
 
 }  // namespace hakkou
