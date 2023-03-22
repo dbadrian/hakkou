@@ -1,10 +1,11 @@
 
-// Keep at top before first freertos import
-#include "hfreertos.h"
-
 #include "defines.h"
 #include "event.h"
 #include "logger.h"
+#include "platform.h"
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 using namespace hakkou;
 
@@ -17,7 +18,9 @@ extern "C" void app_main(void) {
   // or
   initialize_logging();
   event_initialize();
-  
+
+  vTaskDelay(pdMS_TO_TICKS(10));
+
 
   vTaskSuspend(nullptr);
 }

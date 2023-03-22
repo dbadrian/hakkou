@@ -30,7 +30,7 @@ enum class LogLevel {
 bool initialize_logging();
 void shutdown_logging();
 
-KAPI void log_output(log_level level, const char* message, ...);
+// void log_output(log_level level, const char* message, ...);
 
 // Logs a fatal-level message
 #define KFATAL(message, ...) log_output(LOG_LEVEL_FATAL, message, ##__VA_ARGS__)

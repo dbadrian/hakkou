@@ -1,11 +1,10 @@
-idf_component_register(SRCS
-    "main.cpp"
-    "logger.cpp"
-    "event.cpp"
-    "platform_esp32.cpp"
-
+idf_component_register(
+    SRCS
+        "main.cpp"
+        "logger.cpp"
+        "event.cpp"
+        "platform_esp32.cpp"
     INCLUDE_DIRS "."
-    PRIV_REQUIRES freertos
 )
 
 
