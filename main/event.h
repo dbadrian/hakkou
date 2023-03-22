@@ -23,22 +23,6 @@ enum class EventType : u16 {
   NUM_EVENTS,
 };
 
-struct FanRPM {
-  u16 value;
-};
-// any temperature sensor
-struct TemperatureReading {
-  f32 value;
-};
-// any humidity reading
-struct HumidityReading {
-  f32 value;
-};
-// system codes (mostly errors)
-struct SystemCode {
-  u16 code;
-};
-
 // tagged union approach
 struct Event {
   EventType event_type;
