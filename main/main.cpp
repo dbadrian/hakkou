@@ -42,7 +42,7 @@ extern "C" void app_main(void) {
   initialize_logging();
   event_initialize();
 
-  Tachometer<10> tacho(35);
+  Tachometer tacho(35);
 
   // initializer logger if necessary
   // wifi /etc brought up by platform layer?
