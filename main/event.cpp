@@ -99,12 +99,19 @@ bool event_unregister(EventType event_type,
   }
 }
 
-bool event_post(Event event, TickType_t wait = portMAX_DELAY) {
+bool event_post(Event event, TickType_t wait = portMAX_DELAY, bool high_priority = false) {
   if (!is_initialized) {
     return false;
   }
 
-  if (xQueueSendToBack(state.message_queue, &event, wait) != pdPASS) {
+  bool ret = pdTRUE;
+  if (high_priority) {
+    // Use with caution... :)
+    ret = xQueueSendToFront(state.message_queue, &event, wait);
+  } else {
+    ret = xQueueSendToBack(state.message_queue, &event, wait);
+  }
+  if (ret != pdPASS) {
     HWARN("Failed to post event to queue.")
     return false;  // failed to post message within the defined wait period
   }

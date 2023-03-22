@@ -13,4 +13,5 @@ void platform_log(LogLevel level,
                   va_list args);
 
 void platform_sleep(u64 ms);
+
 }  // namespace hakkou
