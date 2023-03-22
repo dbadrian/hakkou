@@ -4,6 +4,7 @@
 
 #include "defines.h"
 #include "event.h"
+#include "logger.h"
 
 using namespace hakkou;
 
@@ -14,7 +15,9 @@ extern "C" void app_main(void) {
   // However, most are equivalent require the whole time,
   // so memory release would be equivalent to system shutdown
   // or
+  initialize_logging();
   event_initialize();
+  
 
   vTaskSuspend(nullptr);
 }
