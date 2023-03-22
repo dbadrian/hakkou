@@ -1,4 +1,5 @@
 #include "event.h"
+#include "logger.h"
 
 #include <tuple>
 #include <vector>
@@ -13,7 +14,16 @@ namespace {
  */
 static bool is_initialized = false;
 static EventSystemState state;
+
+// Task/Stack buffer
+constexpr static uint32_t STACK_SIZE = 2 * 2048;
+constexpr static UBaseType_t PRIORITY = 9;  // TODO: set somewhere else
+StackType_t task_stack[STACK_SIZE];
+StaticTask_t task_buffer;
+TaskHandle_t xHandle{nullptr};
 }  // namespace
+
+void event_loop(void* params);
 
 bool event_initialize() {
   if (is_initialized == true) {
@@ -40,7 +50,16 @@ bool event_initialize() {
     cb_vec.reserve(EventSystemState::QUEUE_PREALLOCATION_RATE);
   }
 
-  // TODO: start the event loop here
+  xHandle = xTaskCreateStatic(
+      event_loop,    /* Function that implements the task. */
+      "events",      /* Text name for the task. */
+      STACK_SIZE,    /* Number of indexes in the xStack array. */
+      nullptr,       /* Parameter passed into the task. */
+      PRIORITY,      /* Priority at which the task is created. */
+      task_stack,    /* Array to use as the task's stack. */
+      &task_buffer); /* Variable to hold the task's data structure. */
+
+  HINFO("Initialized Event-subsystem")
 
   is_initialized = true;
 
@@ -86,15 +105,16 @@ bool event_post(Event event, TickType_t wait = portMAX_DELAY) {
   }
 
   if (xQueueSendToBack(state.message_queue, &event, wait) != pdPASS) {
+    HWARN("Failed to post event to queue.")
     return false;  // failed to post message within the defined wait period
   }
 
+  HDEBUG("Posted event to queue.");
   // posted message to queue
   return true;
 }
 
-
-void event_loop(void*) {
+void event_loop(void* params) {
   // Note(David): How could we have message priorities and wait for all
   Event event;
 
@@ -121,7 +141,6 @@ void event_loop(void*) {
         continue;
       }
     }
-
   }
 
   // TODO: here we should delete the task, but really it should never end
