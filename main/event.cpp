@@ -153,6 +153,7 @@ void event_loop(void* params) {
   // TODO: here we should delete the task, but really it should never end
   // so we could use the exception raised to cause a system restart
   // just a bit of hidden behaviour?
+  vTaskDelete(NULL);
 }
 
 }  // namespace hakkou

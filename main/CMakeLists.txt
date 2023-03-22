@@ -3,7 +3,7 @@ idf_component_register(
         "main.cpp"
         "logger.cpp"
         "event.cpp"
-        "platform_esp32.cpp"
+        "platform/platform_esp32.cpp"
     INCLUDE_DIRS "."
 )
 

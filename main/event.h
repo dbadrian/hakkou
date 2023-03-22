@@ -12,11 +12,12 @@ namespace hakkou {
 
 enum class EventType : u16 {
   System,
-  Temperature_Amb,
-  Temperature_Food,
-  Humidity_Amb,
-  PID,
-  FAN,
+  HumidityAmbient,
+  TemperatureAmbient,
+  TemperatureFood,
+  PID_SetLevel,
+  FAN_RPM,
+  FAN_SetLevel,
   //
   NUM_EVENTS,
 };
