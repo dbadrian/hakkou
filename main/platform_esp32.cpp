@@ -4,10 +4,10 @@
 // was built with esp-idf...maybe enough?
 #if true
 
-#include "logger.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+
 
 // Set esp internal logging level to what matches applications
 // logging level.
@@ -27,6 +27,7 @@
 
 #include <cstdio>
 
+
 // as defined in esp-idf (skipping includes)
 
 namespace hakkou {
@@ -34,12 +35,12 @@ namespace hakkou {
 namespace {
 constexpr esp_log_level_t
     MAP_LOG_LEVELS[static_cast<std::size_t>(LogLevel::MAX_LOG_LEVELS)] = {
-        ESP_LOG_ERROR,    // <- LOG_LEVEL_FATAL
-        ESP_LOG_ERROR,    // <- LOG_LEVEL_ERROR
-        ESP_LOG_WARN,     // <- LOG_LEVEL_WARN
-        ESP_LOG_INFO,     // <- LOG_LEVEL_INFO
-        ESP_LOG_DEBUG,    // <- LOG_LEVEL_DEBUG
-        ESP_LOG_VERBOSE,  // <- LOG_LEVEL_TRACE
+        ESP_LOG_ERROR,    // <- LogLevel::FATAL
+        ESP_LOG_ERROR,    // <- LogLevel::ERROR
+        ESP_LOG_WARN,     // <- LogLevel::WARN
+        ESP_LOG_INFO,     // <- LogLevel::INFO
+        ESP_LOG_DEBUG,    // <- LogLevel::DEBUG
+        ESP_LOG_VERBOSE,  // <- LogLevel::TRACE
 };
 }
 
@@ -59,6 +60,14 @@ void platform_console_write_error(const char* message, u8 colour) {
   const char* colour_strings[] = {"0;41", "1;31", "1;33",
                                   "1;32", "1;34", "1;30"};
   printf("\033[%sm%s\033[0m", colour_strings[colour], message);
+}
+
+void platform_log(LogLevel level,
+                  const char* tag,
+                  const char* format,
+                  va_list args) {
+  esp_log_writev(MAP_LOG_LEVELS[static_cast<std::size_t>(level)], tag, format,
+                 args);
 }
 
 void platform_sleep(u64 ms) {

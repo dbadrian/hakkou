@@ -15,59 +15,60 @@
 namespace hakkou {
 
 enum class LogLevel {
-  LOG_LEVEL_FATAL = 0,
-  LOG_LEVEL_ERROR = 1,
-  LOG_LEVEL_WARN = 2,
-  LOG_LEVEL_INFO = 3,
-  LOG_LEVEL_DEBUG = 4,
-  LOG_LEVEL_TRACE = 5,
+  FATAL = 0,
+  ERROR,
+  WARN,
+  INFO,
+  DEBUG,
+  TRACE,
   //
   MAX_LOG_LEVELS
 };
 
-}
 
 bool initialize_logging();
 void shutdown_logging();
 
-// void log_output(log_level level, const char* message, ...);
+void log(LogLevel level, const char* message, ...);
 
 // Logs a fatal-level message
-#define KFATAL(message, ...) log_output(LOG_LEVEL_FATAL, message, ##__VA_ARGS__)
+#define HFATAL(message, ...) log(LogLevel::FATAL, message, ##__VA_ARGS__);
 
-#ifndef KERROR
+#ifndef HERROR
 // Logs a error-level message
-#define KERROR(message, ...) log_output(LOG_LEVEL_ERROR, message, ##__VA_ARGS__)
+#define HERROR(message, ...) log(LogLevel::ERROR, message, ##__VA_ARGS__);
 #endif
 
 #if LOG_WARN_ENABLED == 1
 // Logs a error-level message
-#define KWARN(message, ...) log_output(LOG_LEVEL_WARN, message, ##__VA_ARGS__)
+#define HWARN(message, ...) log(LogLevel::WARN, message, ##__VA_ARGS__);
 #else
 // Does nothing when LOG_WARN_ENABLED != 1
-#define KWARN(message, ...)
+#define HWARN(message, ...)
 #endif
 
 #if LOG_INFO_ENABLED == 1
 // Logs a error-level message
-#define KINFO(message, ...) log_output(LOG_LEVEL_INFO, message, ##__VA_ARGS__)
+#define HINFO(message, ...) log(LogLevel::INFO, message, ##__VA_ARGS__);
 #else
 // Does nothing when LOG_INFO_ENABLED != 1
-#define KINFO(message, ...)
+#define HINFO(message, ...)
 #endif
 
 #if LOG_DEBUG_ENABLED == 1
 // Logs a error-level message
-#define KDEBUG(message, ...) log_output(LOG_LEVEL_DEBUG, message, ##__VA_ARGS__)
+#define HDEBUG(message, ...) log(LogLevel::DEBUG, message, ##__VA_ARGS__);
 #else
 // Does nothing when LOG_DEBUG_ENABLED != 1
-#define KDEBUG(message, ...)
+#define HDEBUG(message, ...)
 #endif
 
 #if LOG_TRACE_ENABLED == 1
 // Logs a error-level message
-#define KTRACE(message, ...) log_output(LOG_LEVEL_TRACE, message, ##__VA_ARGS__)
+#define HTRACE(message, ...) log(LogLevel::TRACE, message, ##__VA_ARGS__);
 #else
 // Does nothing when LOG_TRACE_ENABLED != 1
-#define KTRACE(message, ...)
+#define HTRACE(message, ...)
 #endif
+
+}  // namespace hakkou
