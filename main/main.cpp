@@ -1,7 +1,9 @@
 
-#include "defines.h"
+// #include "defines.h"
 #include "event.h"
 #include "logger.h"
+
+#include "esp_log.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -14,6 +16,12 @@ extern "C" void app_main(void) {
   // E.g., important GPIO to be in a known safe state.
   // TODO: handle restart
 
+  HFATAL(" >>>>> HAKKKOU FATAL <<<<< ");
+  HERROR(" >>>>> HAKKKOU ERROR <<<<< ");
+  HWARN(" >>>>> HAKKKOU WARN <<<<< ");
+  HINFO(" >>>>> HAKKKOU INFO <<<<< ");
+  HDEBUG(" >>>>> HAKKKOU DEBUG <<<<< ");
+  HTRACE(" >>>>> HAKKKOU TRACE <<<<< ");
 
   // Initialize various subsystems
   // Note(DBA): If this were a normal application, we'd
@@ -27,8 +35,5 @@ extern "C" void app_main(void) {
   // wifi /etc brought up by platform layer?
 
   // Now start the main FSM
-  
-
-
-  vTaskSuspend(nullptr);
+  vTaskSuspend(NULL);
 }

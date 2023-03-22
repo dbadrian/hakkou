@@ -6,6 +6,7 @@
 #include "freertos/queue.h"
 
 #include <array>
+#include <optional>
 #include <vector>
 
 namespace hakkou {
@@ -105,7 +106,7 @@ struct EventSystemState {
 
 bool event_initialize();
 
-[[nodiscard]] std::optional<EventCallbackHandle>
+[[nodiscard]] std::optional<EventHandle>
 event_register(EventType event_type, void* listener, OnEventCallback callback);
 
 bool event_unregister(EventHandle handle);

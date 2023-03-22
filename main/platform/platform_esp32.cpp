@@ -4,10 +4,8 @@
 // was built with esp-idf...maybe enough?
 #if true
 
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
 
 // Set esp internal logging level to what matches applications
 // logging level.
@@ -26,7 +24,6 @@
 #include <esp_log.h>
 
 #include <cstdio>
-
 
 // as defined in esp-idf (skipping includes)
 
@@ -49,25 +46,15 @@ void logging_initialize_platform(LogLevel level) {
   esp_log_level_set("*", MAP_LOG_LEVELS[static_cast<std::size_t>(level)]);
 }
 
-void platform_console_write(const char* message, u8 colour) {
-  // FATAL,ERROR,WARN,INFO,DEBUG,TRACE
+void platform_log(LogLevel level, std::string_view message, va_list args) {
   const char* colour_strings[] = {"0;41", "1;31", "1;33",
                                   "1;32", "1;34", "1;30"};
-  printf("\033[%sm%s\033[0m", colour_strings[colour], message);
-}
-void platform_console_write_error(const char* message, u8 colour) {
-  // FATAL,ERROR,WARN,INFO,DEBUG,TRACE
-  const char* colour_strings[] = {"0;41", "1;31", "1;33",
-                                  "1;32", "1;34", "1;30"};
-  printf("\033[%sm%s\033[0m", colour_strings[colour], message);
-}
-
-void platform_log(LogLevel level,
-                  const char* tag,
-                  const char* format,
-                  va_list args) {
-  esp_log_writev(MAP_LOG_LEVELS[static_cast<std::size_t>(level)], tag, format,
-                 args);
+  const char* log_level_string[] = {"[FATAL]", "[ERROR]", "[WARN ]",
+                                    "[INFO ]", "[DEBUG]", "[TRACE]"};
+  std::printf("\033[%sm%s: ", colour_strings[static_cast<u8>(level)],
+              log_level_string[static_cast<u8>(level)]);
+  std::vprintf(message.data(), args);
+  std::printf("\033[0m\n");
 }
 
 void platform_sleep(u64 ms) {

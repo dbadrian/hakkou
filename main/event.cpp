@@ -60,7 +60,7 @@ bool event_initialize() {
       task_stack,    /* Array to use as the task's stack. */
       &task_buffer); /* Variable to hold the task's data structure. */
 
-  HINFO("Initialized Event-subsystem")
+  HINFO("Initialized Event-subsystem");
 
   is_initialized = true;
 
@@ -87,19 +87,19 @@ std::optional<EventHandle> event_register(EventType event_type,
   cb_vec.push_back(EventCallbackRegistry{
       .listener = listener, .callback = callback, .id = id});
 
-  return {.event_type = event_type, .id = id};
+  return EventHandle{.event_type = event_type, .id = id};
 }
 
-bool event_unregister(EventHandle handle) {
+bool event_unregister(const EventHandle& handle) {
   if (!is_initialized) {
     return false;
   }
 
   auto erased = std::erase_if(
       state.callbacks[static_cast<std::size_t>(handle.event_type)],
-      [&signature](EventCallbackRegistry& x) { return x.id == handle.id; });
+      [&handle](EventCallbackRegistry& x) { return x.id == handle.id; });
 
-  return erased > 0
+  return erased > 0;
 }
 
 bool event_post(Event event,
@@ -123,7 +123,7 @@ bool event_post(Event event,
     HDEBUG("Posted event to queue.");
     return true;
   } else {
-    HWARN("Failed to post event to queue.")
+    HWARN("Failed to post event to queue.");
     return false;  // failed to post message within the defined wait period
   }
 }
@@ -132,7 +132,7 @@ void event_loop(void* params) {
   // Note(David): How could we have message priorities and wait for all
   Event event;
 
-  HDEBUG("Event loop started.")
+  HDEBUG("Event loop started.");
   while (true) {
     // Since wait time is set to `portMAX_DELAY`, the cmd waits indefinitely for
     // a message hence should ways return true
@@ -152,7 +152,7 @@ void event_loop(void* params) {
       // TODO(DBA): Should this be a warning or rather debug? When would we want
       // to emit events without a callback defined? Maybe the IR cmds or
       // others???
-      HWARN("Received event (type: %i) without callbacks.")
+      HWARN("Received event (type: %i) without callbacks.");
       continue;
     }
 
@@ -169,7 +169,7 @@ void event_loop(void* params) {
       }
     }
   }
-  HDEBUG("Event loop finished.")
+  HDEBUG("Event loop finished.");
 
   // TODO: here we should delete the task, but really it should never end
   // so we could use the exception raised to cause a system restart
@@ -177,13 +177,13 @@ void event_loop(void* params) {
   vTaskDelete(NULL);
 }
 
-class ScopedEventHandleGuard {
- public:
-  HandleGuard(EventHandle handle) : handle_(handle) {}
-  ~HandleGuard() { event_unregister(handle_); }
+// class ScopedEventHandleGuard {
+//  public:
+//   HandleGuard(EventHandle& handle) : handle_(handle) {}
+//   ~HandleGuard() { event_unregister(handle_); }
 
- private:
-  EventHandle handle_;
-};
+//  private:
+//   EventHandle handle_;
+// };
 
 }  // namespace hakkou
