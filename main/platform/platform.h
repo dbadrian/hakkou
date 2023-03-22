@@ -26,11 +26,11 @@ enum class GPIOInterruptType {
 };
 
 enum class GPIODirection {
-  INPUT,
-  OUTPUT,
-  OUTPUT_OPEN_DRAIN,
-  INPUT_OUTPUT_OPEN_DRAIN,
-  INPUT_OUTPUT
+  INPUT = 1,
+  OUTPUT = 2,
+  OUTPUT_OPEN_DRAIN = 3,
+  INPUT_OUTPUT_OPEN_DRAIN = 4,
+  INPUT_OUTPUT = 5
 };
 
 // ISR callback signature
@@ -72,4 +72,6 @@ bool platform_initialize(PlatformConfiguration config);
 bool platform_on_restart(PlatformConfiguration config);
 bool platform_post_restart(PlatformConfiguration config);  // TODO: needed?
 
+// misc
+// TODO: wrap the timer32 here and other timer functions..?
 }  // namespace hakkou

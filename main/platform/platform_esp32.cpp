@@ -70,6 +70,57 @@ void platform_sleep(u64 ms) {
 // https :  // youtu.be/y4xfub_s7Zk?t=2665
 //  esp_log_write() esp_log_writeev()
 
+namespace {
+using D = hakkou::GPIODirection;
+// Set entry to the minimum level this GPIO (position == gpio_num)
+// supports.
+// Input is the lowest (1), hence 0 indicates that GPIO number can't be
+// used/doesnt exist.
+constexpr u16 GPIO_VALID_MODE[GPIO_NUM_MAX] = {
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO0, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO1, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO2, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO3, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO4, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO5, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO6, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO7, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO8, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO9, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO10, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO11, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO12, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO13, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO14, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO15, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO16, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO17, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO18, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO19, input and output */
+    0,                                 /* NA */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO21, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO22, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO23, input and output */
+    0,                                 /* NA */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO25, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO26, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO27, input and output */
+    0,                                 /* NA */
+    0,                                 /* NA */
+    0,                                 /* NA */
+    0,                                 /* NA */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO32, input and output */
+    static_cast<u16>(D::INPUT_OUTPUT), /*!< GPIO32, input and output */
+    static_cast<u16>(D::INPUT),        /*!< GPIO34, input mode only */
+    static_cast<u16>(D::INPUT),        /*!< GPIO35, input mode only */
+    static_cast<u16>(D::INPUT),        /*!< GPIO36, input mode only */
+    static_cast<u16>(D::INPUT),        /*!< GPIO37, input mode only */
+    static_cast<u16>(D::INPUT),        /*!< GPIO38, input mode only */
+    static_cast<u16>(D::INPUT),        /*!< GPIO39, input mode only */
+};
+
+}  // namespace
+
 // GPIO RELATED
 void gpio_configure(const GPIOConfig& conf) {
   gpio_config_t io_conf = {};
@@ -77,8 +128,14 @@ void gpio_configure(const GPIOConfig& conf) {
   // convert pin number to bit mask...
   io_conf.pin_bit_mask = (u64{1} << conf.pin);
 
+  // validate that the chosen pin number fits to the chosen input/output
+  if (static_cast<u16>(conf.direction) > GPIO_VALID_MODE[conf.pin]) {
+    // Not really necessary...esp-idf will also report error, but this
+    // way we can also log it elsewhere...
+    HFATAL("Invalid GPIO number given!");
+  }
+
   // set input/output mode
-  // TODO: Validate that the chosen pin number fits to the chosen input/output
   switch (conf.direction) {
     case GPIODirection::INPUT: {
       io_conf.mode = GPIO_MODE_INPUT;
