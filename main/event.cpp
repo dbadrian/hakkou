@@ -76,9 +76,11 @@ std::optional<EventHandle> event_register(EventType event_type,
 
   // check if something with the same "signature" was already added
   auto signature = std::tie(callback, listener);
-  auto cb_vec = state.callbacks[static_cast<std::size_t>(event_type)];
+  auto& cb_vec = state.callbacks[static_cast<std::size_t>(event_type)];
   for (const auto& cbr : cb_vec) {
-    if (std ::tie(cbr.callback, cbr.listener) == signature) {
+    if (std::tie(cbr.callback, cbr.listener) == signature) {
+      HERROR(
+          "Callback with matching signature appears to be already registered");
       return std::nullopt;
     }
   }
@@ -87,6 +89,7 @@ std::optional<EventHandle> event_register(EventType event_type,
   cb_vec.push_back(EventCallbackRegistry{
       .listener = listener, .callback = callback, .id = id});
 
+  HDEBUG("Registered callback for event type: %u.", event_type);
   return EventHandle{.event_type = event_type, .id = id};
 }
 
@@ -102,9 +105,7 @@ bool event_unregister(const EventHandle& handle) {
   return erased > 0;
 }
 
-bool event_post(Event event,
-                TickType_t wait = portMAX_DELAY,
-                bool high_priority = false) {
+bool event_post(Event event, bool high_priority, TickType_t wait) {
   if (!is_initialized) {
     return false;
   }
@@ -152,7 +153,7 @@ void event_loop(void* params) {
       // TODO(DBA): Should this be a warning or rather debug? When would we want
       // to emit events without a callback defined? Maybe the IR cmds or
       // others???
-      HWARN("Received event (type: %i) without callbacks.");
+      HWARN("Received event (type: %u) without callbacks.", event.event_type);
       continue;
     }
 
@@ -160,11 +161,11 @@ void event_loop(void* params) {
     // signal to notify the event subsystem, to not forward the event to any
     // further callbacks.
     for (auto& registry : cb_vec) {
-      using CR = CallbackRespone;
+      using CR = CallbackResponse;
       const CR res = registry.callback(event, registry.listener);
-      if (res == CR::STOP) {
+      if (res == CR::Stop) {
         break;
-      } else if (res == CR::CONTINUE) {
+      } else if (res == CR::Continue) {
         continue;
       }
     }

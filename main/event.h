@@ -16,50 +16,52 @@ enum class EventType : u16 {
   HumidityAmbient,
   TemperatureAmbient,
   TemperatureFood,
-  PID_SetLevel,
-  FAN_RPM,
-  FAN_SetLevel,
+  PIDSetLevel,
+  FanRPM,
+  FanSetLevel,
   //
   NUM_EVENTS,
 };
 
-// 32 bit
-union EventContext {
-  // readout from the 4pin fan
-  struct FanRPM {
-    u16 value;
-  } rpm;
-  // any temperature sensor
-  struct TemperatureReading {
-    f32 value;
-  } temperature;
-  // any humidity reading
-  struct HumidityReading {
-    f32 value;
-  } humidity;
-  // system codes (mostly errors)
-  struct SystemCode {
-    u16 code;
-  } code;
+struct FanRPM {
+  u16 value;
+};
+// any temperature sensor
+struct TemperatureReading {
+  f32 value;
+};
+// any humidity reading
+struct HumidityReading {
+  f32 value;
+};
+// system codes (mostly errors)
+struct SystemCode {
+  u16 code;
 };
 
 // tagged union approach
 struct Event {
   EventType event_type;
   void* sender = nullptr;
-  EventContext context;
+  // 32 bit
+  union {
+    u16 fan_rpm;
+    f32 temperature;
+    f32 humidity;
+    u16 code;
+  };
 };
 // TODO: Static assert the sizeevent_initialize(
 
 // Function signature
-enum class CallbackRespone : u8 {
-  STOP,
-  CONTINUE,
+enum class CallbackResponse : u8 {
+  Stop,
+  Continue,
   //
   NUM_CALLBACK_RESPONSES,
 };
 
-using OnEventCallback = CallbackRespone (*)(Event event, void* listener);
+using OnEventCallback = CallbackResponse (*)(Event event, void* listener);
 
 struct EventCallbackRegistry {
   void* listener;  // potentially the class that will receive this callback
@@ -111,7 +113,9 @@ event_register(EventType event_type, void* listener, OnEventCallback callback);
 
 bool event_unregister(EventHandle handle);
 
-bool event_fire(Event event, void* sender);
+bool event_post(Event event,
+                bool high_priority = false,
+                TickType_t wait = portMAX_DELAY);
 
 void event_loop(void* params);
 
