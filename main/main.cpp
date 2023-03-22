@@ -2,6 +2,11 @@
 // #include "defines.h"
 #include "event.h"
 #include "logger.h"
+#include "platform/platform.h"
+
+///////TODO: Temp includes
+#include "fan.h"
+//////////
 
 #include "esp_log.h"
 
@@ -23,6 +28,11 @@ extern "C" void app_main(void) {
   HDEBUG(" >>>>> HAKKKOU DEBUG <<<<< ");
   HTRACE(" >>>>> HAKKKOU TRACE <<<<< ");
 
+  // First get important hardware things setup
+  platform_initialize({
+      .interrupt_enabled = true,
+  });
+
   // Initialize various subsystems
   // Note(DBA): If this were a normal application, we'd
   // also ensure to release the allocated memory etc.
@@ -31,6 +41,8 @@ extern "C" void app_main(void) {
   // or
   initialize_logging();
   event_initialize();
+
+  Tachometer<10> tacho(35);
 
   // initializer logger if necessary
   // wifi /etc brought up by platform layer?

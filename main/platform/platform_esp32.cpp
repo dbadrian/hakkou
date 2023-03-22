@@ -21,6 +21,7 @@
 #define LOG_LOCAL_LEVEL ESP_LOG_ERROR
 #endif
 
+#include <driver/gpio.h>
 #include <esp_log.h>
 
 #include <cstdio>
@@ -68,6 +69,113 @@ void platform_sleep(u64 ms) {
 
 // https :  // youtu.be/y4xfub_s7Zk?t=2665
 //  esp_log_write() esp_log_writeev()
+
+// GPIO RELATED
+void gpio_configure(const GPIOConfig& conf) {
+  gpio_config_t io_conf = {};
+
+  // convert pin number to bit mask...
+  io_conf.pin_bit_mask = (u64{1} << conf.pin);
+
+  // set input/output mode
+  // TODO: Validate that the chosen pin number fits to the chosen input/output
+  switch (conf.direction) {
+    case GPIODirection::INPUT: {
+      io_conf.mode = GPIO_MODE_INPUT;
+    } break;
+    case GPIODirection::OUTPUT: {
+      io_conf.mode = GPIO_MODE_OUTPUT;
+    } break;
+    case GPIODirection::OUTPUT_OPEN_DRAIN: {
+      io_conf.mode = GPIO_MODE_OUTPUT_OD;
+    } break;
+    case GPIODirection::INPUT_OUTPUT_OPEN_DRAIN: {
+      io_conf.mode = GPIO_MODE_INPUT_OUTPUT_OD;
+    } break;
+    case GPIODirection::INPUT_OUTPUT: {
+      io_conf.mode = GPIO_MODE_INPUT_OUTPUT;
+    } break;
+    default: {
+      HERROR("Invalid GPIODirection passed!");
+      break;
+    }
+  }
+
+  // enable pull-up
+  if (conf.pull_mode == GPIOPullMode::UP ||
+      conf.pull_mode == GPIOPullMode::UP_DOWN) {
+    io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+  }
+
+  // enable pull-down
+  if (conf.pull_mode == GPIOPullMode::DOWN ||
+      conf.pull_mode == GPIOPullMode::UP_DOWN) {
+    io_conf.pull_down_en = GPIO_PULLDOWN_ENABLE;
+  }
+
+  // set interrupt type
+  switch (conf.interrupt_type) {
+    case GPIOInterruptType::DISABLE: {
+      io_conf.intr_type = GPIO_INTR_DISABLE;
+    } break;
+    case GPIOInterruptType::POSEDGE: {
+      io_conf.intr_type = GPIO_INTR_POSEDGE;
+    } break;
+    case GPIOInterruptType::NEGEDGE: {
+      io_conf.intr_type = GPIO_INTR_NEGEDGE;
+    } break;
+    case GPIOInterruptType::ANYEDGE: {
+      io_conf.intr_type = GPIO_INTR_ANYEDGE;
+    } break;
+    case GPIOInterruptType::LOW_LEVEL: {
+      io_conf.intr_type = GPIO_INTR_LOW_LEVEL;
+    } break;
+    case GPIOInterruptType::HIGH_LEVEl: {
+      io_conf.intr_type = GPIO_INTR_HIGH_LEVEL;
+    } break;
+    default: {
+      HERROR("Invalid GPIODirection passed!");
+      break;
+    }
+  }
+  gpio_config(&io_conf);
+
+  if (conf.isr_handler != nullptr) {
+    // if a handler was added, then we should have set when it should be
+    // triggered!
+    if (conf.interrupt_type == GPIOInterruptType::DISABLE) {
+      HWARN("Added an ISR handler, but interrupt type set to disabled!");
+    }
+  }
+  gpio_isr_handler_add(static_cast<gpio_num_t>(conf.pin), conf.isr_handler,
+                       conf.isr_arg);
+}
+
+bool platform_initialize(PlatformConfiguration config) {
+  if (config.interrupt_enabled) {
+    switch (gpio_install_isr_service(0)) {
+      case ESP_OK: {
+        HINFO("Installed ISR Service");
+      } break;
+      case ESP_ERR_NO_MEM: {
+        HINFO("Installed ISR Service");
+      } break;
+      case ESP_ERR_INVALID_STATE: {
+        HINFO("Installed ISR Service");
+      } break;
+      case ESP_ERR_NOT_FOUND: {
+        HINFO("Installed ISR Service");
+      } break;
+      case ESP_ERR_INVALID_ARG: {
+        HINFO("Installed ISR Service");
+      } break;
+    }
+  }
+
+  // TODO: Vfat
+  // TODO: ???
+  return true;
+}
 
 }  // namespace hakkou
 #endif
