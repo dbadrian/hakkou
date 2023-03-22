@@ -1,0 +1,173 @@
+menu "Hakkou Configuration"
+
+    # Various pins
+    config FAN_TACHO_PIN
+        int "Fan TACHO gpio pin"
+        default 35
+        help
+            The pin of the fan tacho gpio pin
+
+    # Different buffer sizes etc.
+    config FAN_TACHO_WINDOW_SIZE
+        int "Fan Tacho Window Size"
+        default 10
+        help
+            The pin of the fan's tacho's window size (ring buffer)
+
+
+    # config IR_RMT_CHANNEL
+    #     int "RMT Channel"
+    #     default 2
+    #     help
+    #         Set uniquely assigned RMT channel for the IR
+
+    # config IR_ADDR
+    #     hex "RMT Channel"
+    #     default 0x6B41
+    #     help
+    #         Address of IR remote control            
+
+    # config ONEWIRE_PIN
+    #     int "Onewire gpio pin"
+    #     default 27
+    #     help
+    #         The pin of the onewire gpio pin
+
+    # config BMP280_I2C_ADDRESS
+    #     hex "BMP280 I2C Address"
+    #     default 0x76
+    #     help
+    #         BMP280
+
+    # config I2C_SDA_PIN
+    #     int "I2C SDA pin"
+    #     default 26
+    #     help
+    #         I2C SDA pin
+
+    # config I2C_SCL_PIN
+    #     int "I2C SCL pin"
+    #     default 25
+    #     help
+    #         I2C SCL pin
+
+    # config HEATER_PWM_PIN
+    #     int "Heater PWM gpio pin"
+    #     default 33
+    #     help
+    #         The pin of the heater pwm gpio pin
+
+    # config HEATER_LEDC_CHANNEL
+    #     int "LEDC PWM Channel"
+    #     default 0
+    #     range 0 6
+    #     help
+    #         Ensure its unique (see other pwm channels!)
+
+    # config FAN_PWM_PIN
+    #     int "Fan PWM gpio pin"
+    #     default 32
+    #     help
+    #         The pin of the fan pwm gpio pin
+
+    # config FAN_PWM_CHANNEL
+    #     int "Fan PWM Channel"
+    #     default 1
+    #     range 0 6
+    #     help
+    #         Ensure its unique (see other pwm channels!)
+
+    # config FAN_TACHO_PIN
+    #     int "Fan TACHO gpio pin"
+    #     default 35
+    #     help
+    #         The pin of the fan tacho gpio pin
+
+    # config ESP_WIFI_SSID
+    #     string "WiFi SSID"
+    #     default "myssid"
+    #     help
+    #         SSID (network name) for the example to connect to.
+
+    # config ESP_WIFI_PASSWORD
+    #     string "WiFi Password"
+    #     default "mypassword"
+    #     help
+    #         WiFi password (WPA or WPA2) for the example to use.
+
+    # config ESP_MAXIMUM_RETRY
+    #     int "Maximum retry"
+    #     default 5
+    #     help
+    #         Set the Maximum retry to avoid station reconnecting to the AP unlimited when the AP is really inexistent.
+
+    # choice ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD
+    #     prompt "WiFi Scan auth mode threshold"
+    #     default ESP_WIFI_AUTH_OPEN
+    #     help
+    #         The weakest authmode to accept in the scan mode.
+
+    #     config ESP_WIFI_AUTH_OPEN
+    #         bool "OPEN"
+    #     config ESP_WIFI_AUTH_WEP
+    #         bool "WEP"
+    #     config ESP_WIFI_AUTH_WPA_PSK
+    #         bool "WPA PSK"
+    #     config ESP_WIFI_AUTH_WPA2_PSK
+    #         bool "WPA2 PSK"
+    #     config ESP_WIFI_AUTH_WPA_WPA2_PSK
+    #         bool "WPA/WPA2 PSK"
+    #     config ESP_WIFI_AUTH_WPA3_PSK
+    #         bool "WPA3 PSK"
+    #     config ESP_WIFI_AUTH_WPA2_WPA3_PSK
+    #         bool "WPA2/WPA3 PSK"
+    #     config ESP_WIFI_AUTH_WAPI_PSK
+    #         bool "WAPI PSK"
+    # endchoice
+
+    # config MMQT_BROKER_URL
+    #     string "MMQT_Broker URL"
+    #     default "mqtt://192.168.178.70:1883"
+    #     help
+    #         URL of the broker to connect to
+
+
+    # config EXAMPLE_FORMAT_IF_MOUNT_FAILED
+    #     bool "Format the card if mount failed"
+    #     default n
+    #     help
+    #         If this config item is set, format_if_mount_failed will be set to true and the card will be formatted if
+    #         the mount has failed.
+
+    # config MOSI_PIN
+    #     int "MOSI GPIO number"
+    #     default 23
+
+    # config MISO_PIN
+    #     int "MISO GPIO number"
+    #     default 19
+
+    # config CLK_PIN
+    #     int "CLK GPIO number"
+    #     default 18
+
+    # config CS_PIN
+    #     int "CS GPIO number"
+    #     default 5
+
+
+    # config WEB_MOUNT_POINT
+    #     string "Website mount point in VFS"
+    #     default "/www"
+    #     help
+    #         Specify the mount point in VFS.
+
+    # config MDNS_HOST_NAME
+    #     string "mDNS Host Name"
+    #     default "hakkou"
+    #     help
+    #         Specify the domain name used in the mDNS service.
+    #         Note that webpage also take it as a part of URL where it will send GET/POST requests to.
+
+
+endmenu
