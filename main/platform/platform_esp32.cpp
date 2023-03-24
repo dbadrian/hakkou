@@ -32,6 +32,7 @@ namespace hakkou {
 
 namespace {
 constexpr esp_log_level_t
+    // Convert internal log-levels to the esp-idf log levels
     MAP_LOG_LEVELS[static_cast<std::size_t>(LogLevel::MAX_LOG_LEVELS)] = {
         ESP_LOG_ERROR,    // <- LogLevel::FATAL
         ESP_LOG_ERROR,    // <- LogLevel::ERROR
@@ -122,7 +123,7 @@ constexpr u16 GPIO_VALID_MODE[GPIO_NUM_MAX] = {
 }  // namespace
 
 // GPIO RELATED
-void gpio_configure(const GPIOConfig& conf) {
+bool gpio_configure(const GPIOConfig& conf) {
   gpio_config_t io_conf = {};
 
   // convert pin number to bit mask...
@@ -133,6 +134,7 @@ void gpio_configure(const GPIOConfig& conf) {
     // Not really necessary...esp-idf will also report error, but this
     // way we can also log it elsewhere...
     HFATAL("Invalid GPIO number given!");
+    return false;
   }
 
   // set input/output mode
@@ -154,7 +156,7 @@ void gpio_configure(const GPIOConfig& conf) {
     } break;
     default: {
       HERROR("Invalid GPIODirection passed!");
-      break;
+      return false;
     }
   }
 
@@ -195,43 +197,106 @@ void gpio_configure(const GPIOConfig& conf) {
       break;
     }
   }
-  gpio_config(&io_conf);
-
-  if (conf.isr_handler != nullptr) {
-    // if a handler was added, then we should have set when it should be
-    // triggered!
-    if (conf.interrupt_type == GPIOInterruptType::DISABLE) {
-      HWARN("Added an ISR handler, but interrupt type set to disabled!");
+  switch (gpio_config(&io_conf)) {
+    case ESP_OK: {
+    } break;
+    case ESP_ERR_INVALID_ARG: {
+      HERROR("Parameter error when configuring GPIO pin %ul!", conf.pin);
+      return false;
     }
   }
-  gpio_isr_handler_add(static_cast<gpio_num_t>(conf.pin), conf.isr_handler,
-                       conf.isr_arg);
+
+  // Add any request ISR handlers after verifying we can actually do so
+  if (conf.isr_handler != nullptr) {
+    // if a handler was added, then we should have set when it should be
+    // triggered on!
+    if (conf.interrupt_type == GPIOInterruptType::DISABLE) {
+      HERROR("Request ISR handler, but interrupt type set to disabled!");
+      return false;
+    }
+  }
+  esp_err_t isr_status_ret = gpio_isr_handler_add(
+      static_cast<gpio_num_t>(conf.pin), conf.isr_handler, conf.isr_arg);
+  switch (isr_status_ret) {
+    case ESP_OK: {
+      HINFO("Added ISR handler");
+    } break;
+    case ESP_ERR_INVALID_STATE: {
+      HERROR("Wrong state, the ISR service has not been initialized.");
+      return false;
+    }
+    case ESP_ERR_INVALID_ARG: {
+      HERROR("Parameter error ");
+      return false;
+    }
+  }
+
+  // everything configure correctly...
+  return true;
 }
 
 bool platform_initialize(PlatformConfiguration config) {
-  if (config.interrupt_enabled) {
+  if (!platform_add_shutdown_handler(&platform_on_shutdown)) {
+    HERROR(
+        "Couldn't install the system-wide platform shutdown handler. Aborting "
+        "for safety.");
+    return false;
+  }
+
+  if (config.interrupts_enabled) {
     switch (gpio_install_isr_service(0)) {
       case ESP_OK: {
-        HINFO("Installed ISR Service");
+        HINFO("Installed ISR Service.");
       } break;
       case ESP_ERR_NO_MEM: {
-        HINFO("Installed ISR Service");
-      } break;
+        HERROR("No memory to install this service.");
+        return false;
+      }
       case ESP_ERR_INVALID_STATE: {
-        HINFO("Installed ISR Service");
-      } break;
+        HERROR("ISR service already installed.");
+        return false;
+      }
       case ESP_ERR_NOT_FOUND: {
-        HINFO("Installed ISR Service");
-      } break;
+        HERROR("No free interrupt found with the specified flags.");
+        return false;
+      }
       case ESP_ERR_INVALID_ARG: {
-        HINFO("Installed ISR Service");
-      } break;
+        HERROR("GPIO error.");
+        return false;
+      }
     }
   }
 
-  // TODO: Vfat
-  // TODO: ???
+  // // Internal flash storage
+  // ESP_ERROR_CHECK(nvs_flash_init());
+  // // ESP_ERROR_CHECK(init_fs());
+
+  // // I2C init (for LCD display and BME sensors)
+  // ESP_ERROR_CHECK(i2cdev_init());
   return true;
+}
+
+bool platform_add_shutdown_handler(ShutdownHandler handler) {
+  switch (esp_register_shutdown_handler(handler)) {
+    case ESP_OK: {
+      HINFO("Registered Platform Shutdown Handler.");
+    } break;
+    case ESP_ERR_INVALID_STATE: {
+      HERROR("Handler already registered");
+      return false;
+    }
+    case ESP_ERR_NO_MEM: {
+      HERROR("No more shutdown handler slots are available");
+      return false;
+    }
+  }
+
+  return true;
+}
+
+void platform_on_shutdown(void) {
+  // TODO: Log more? FIlesystem shutdown? dunnno
+  HWARN("System shutdown occured....");
 }
 
 }  // namespace hakkou

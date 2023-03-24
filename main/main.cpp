@@ -30,7 +30,7 @@ extern "C" void app_main(void) {
 
   // First get important hardware things setup
   platform_initialize({
-      .interrupt_enabled = true,
+      .interrupts_enabled = true,
   });
 
   // Initialize various subsystems

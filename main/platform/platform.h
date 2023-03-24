@@ -45,32 +45,23 @@ struct GPIOConfig {
   void* isr_arg;
 };
 
-void gpio_configure(const GPIOConfig& conf);
-
-void gpio_set_direction(GPIODirection direction);
-void gpio_set_pull_mode(GPIOPullMode mode);
+bool gpio_configure(const GPIOConfig& conf);
+// void gpio_set_direction(GPIODirection direction);
+// void gpio_set_pull_mode(GPIOPullMode mode);
 // void gpio_wakeup_enable();
 
-// TODO: should we define a platform_initialize
-// for anything that a platofrm needs to do to ensure proper running??
-// then here we can install the ISR services, configure what might be
-// necessary
-// for I2C etc. void gpio_isr_register();  // gpio_install_isr_service???
-// gpio_uninstall_isr_service
-// gpio_isr_handler_add
-
 struct PlatformConfiguration {
-  bool interrupt_enabled{false};
+  bool interrupts_enabled{false};
   bool vfat_enabled{false};
 };
 
-// TODO: register a callback handler for a reset
-// esp_err_t esp_register_shutdown_handler(shutdown_handler_t handle);
-
 bool platform_initialize(PlatformConfiguration config);
 
-bool platform_on_restart(PlatformConfiguration config);
-bool platform_post_restart(PlatformConfiguration config);  // TODO: needed?
+// Triggered by the esp_shutdown_handler tooling
+void platform_on_shutdown(void);
+
+using ShutdownHandler = void (*)();
+bool platform_add_shutdown_handler(ShutdownHandler handler);
 
 // misc
 // TODO: wrap the timer32 here and other timer functions..?
