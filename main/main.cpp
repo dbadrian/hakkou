@@ -43,10 +43,9 @@ extern "C" void app_main(void) {
   initialize_logging();
   event_initialize();
 
-  Tachometer tacho(35);
-  while (true) {
-    HINFO("RPM: %lu", tacho.rpm(20));
-  }
+  Fan4W* fan = new Fan4W(32, 35);
+  event_post(
+      {.event_type = EventType::FanDuty, .sender = nullptr, .fan_duty = 0});
 
   // initializer logger if necessary
   // wifi /etc brought up by platform layer?

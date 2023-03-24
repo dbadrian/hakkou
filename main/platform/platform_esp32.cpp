@@ -23,6 +23,7 @@
 
 #include <esp_log.h>
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 #include "i2cdev.h"
 #include "nvs_flash.h"
 
@@ -43,7 +44,23 @@ constexpr esp_log_level_t
         ESP_LOG_DEBUG,    // <- LogLevel::DEBUG
         ESP_LOG_VERBOSE,  // <- LogLevel::TRACE
 };
-}
+
+struct PWMState {
+  ledc_mode_t speed_mode;
+  ledc_channel_t channel;
+};
+
+struct PlatformState {
+  // PWM related things
+  // TODO: Generational index or other way to track available
+  // channels
+  PWMState pwm_states[LEDC_CHANNEL_MAX];
+  u8 next_available_pwm_channel = 0;
+};
+
+PlatformState plat_state;
+
+}  // namespace
 
 void logging_initialize_platform(LogLevel level) {
   // set logging level globally (for all tags)
@@ -248,10 +265,66 @@ bool gpio_interrupt_disable(u16 pin) {
   return true;
 }
 
+std::optional<u8> pwm_configure(const PWMConfig& conf) {
+  // Check if pwm channel is available:
+  if (plat_state.next_available_pwm_channel > LEDC_CHANNEL_MAX) {
+    HERROR("Allocated all PWM channels already. Clear another channel first.");
+    return std::nullopt;
+  }
+
+  ledc_timer_config_t ledc_timer = {
+      .speed_mode = LEDC_LOW_SPEED_MODE,
+      .duty_resolution = LEDC_TIMER_10_BIT,
+      .timer_num = LEDC_TIMER_0,
+      .freq_hz = conf.freq,  // Set output frequency at 5 kHz
+      .clk_cfg = LEDC_AUTO_CLK,
+  };
+
+  // TODO: Handle error explicitlyu
+  ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
+
+  // Prepare and then apply the LEDC PWM channel configuration
+  ledc_channel_t channel =
+      static_cast<ledc_channel_t>(plat_state.next_available_pwm_channel);
+  ledc_channel_config_t ledc_channel = {.gpio_num = static_cast<int>(conf.pin),
+                                        .speed_mode = LEDC_LOW_SPEED_MODE,
+                                        .channel = channel,
+                                        .intr_type = LEDC_INTR_DISABLE,
+                                        .timer_sel = LEDC_TIMER_0,
+                                        .duty = 0,  // Set duty to 0%
+                                        .hpoint = 0};
+  // TODO: Handle error explicitlyu
+  ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
+
+  plat_state.pwm_states[plat_state.next_available_pwm_channel].speed_mode =
+      LEDC_LOW_SPEED_MODE;
+  // TODO: not really necessary -> location in array gives already this
+  // information, but no more casting...meh
+  plat_state.pwm_states[plat_state.next_available_pwm_channel].channel =
+      channel;
+
+  // increment the channel counter...
+  return plat_state.next_available_pwm_channel++;
+}
+
+bool pwm_set_duty(u8 channel_id, u32 duty) {
+  ledc_set_duty(plat_state.pwm_states[channel_id].speed_mode,
+                plat_state.pwm_states[channel_id].channel, duty);
+  ledc_update_duty(plat_state.pwm_states[channel_id].speed_mode,
+                   plat_state.pwm_states[channel_id].channel);
+  // TODO: For some reason this doesnt work as it seems to require the fade
+  // service installed?? ESP_ERROR_CHECK(ledc_set_duty_and_update(
+  // plat_state.pwm_states[channel_id].speed_mode,
+  // plat_state.pwm_states[channel_id].channel, duty, 0xfffff));
+
+  return true;
+}
+
 bool platform_initialize(PlatformConfiguration config) {
   if (!platform_add_shutdown_handler(&platform_on_shutdown)) {
     HERROR(
-        "Couldn't install the system-wide platform shutdown handler. Aborting "
+        "Couldn't install the system-wide platform shutdown handler. "
+        "Aborting "
         "for safety.");
     return false;
   }

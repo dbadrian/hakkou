@@ -18,7 +18,7 @@ enum class EventType : u16 {
   TemperatureFood,
   PIDSetLevel,
   FanRPM,
-  FanSetLevel,
+  FanDuty,
   //
   NUM_EVENTS,
 };
@@ -29,6 +29,7 @@ struct Event {
   void* sender = nullptr;
   // 32 bit
   union {
+    u32 fan_duty;
     u16 fan_rpm;
     f32 temperature;
     f32 humidity;
@@ -61,15 +62,6 @@ struct EventHandle {
 // fwd dec of the handle guard specified in C file as the
 // anonynous namespace variable is accessed
 class HandleGuard;
-
-// // what size is std:;size_t on the esp32? whats the native type?
-// enum class EventPriority : u8 {
-//   LOW,   // -> send to back of queue
-//   HIGH,  // -> send to front of queue ...however then other high prio tasks
-//   will
-//          // be pushed back
-//   NUM_PRIORITIES,
-// };
 
 struct EventSystemState {
   // Priority list of events. we can send some events with a higher or lower

@@ -10,9 +10,10 @@ menu "Hakkou Configuration"
     # Different buffer sizes etc.
     config FAN_TACHO_WINDOW_SIZE
         int "Fan Tacho Window Size"
-        default 10
+        default 5
         help
             The pin of the fan's tacho's window size (ring buffer)
+            # 
 
 
     # config IR_RMT_CHANNEL

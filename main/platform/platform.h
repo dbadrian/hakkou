@@ -4,6 +4,7 @@
 #include "logger.h"
 
 #include <cstdarg>
+#include <optional>
 #include <string_view>
 
 namespace hakkou {
@@ -52,6 +53,14 @@ bool gpio_configure(const GPIOConfig& conf);
 
 bool gpio_interrupt_enable(u16 pin);
 bool gpio_interrupt_disable(u16 pin);
+
+struct PWMConfig {
+  u16 pin;
+  u32 freq;
+};
+
+std::optional<u8> pwm_configure(const PWMConfig& conf);
+bool pwm_set_duty(u8 channel_id, u32 duty);
 
 struct PlatformConfiguration {
   bool interrupts_enabled{false};
