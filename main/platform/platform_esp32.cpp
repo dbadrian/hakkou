@@ -21,8 +21,10 @@
 #define LOG_LOCAL_LEVEL ESP_LOG_ERROR
 #endif
 
-#include <driver/gpio.h>
 #include <esp_log.h>
+#include "driver/gpio.h"
+#include "i2cdev.h"
+#include "nvs_flash.h"
 
 #include <cstdio>
 
@@ -235,6 +237,17 @@ bool gpio_configure(const GPIOConfig& conf) {
   return true;
 }
 
+bool gpio_interrupt_enable(u16 pin) {
+  // TODO: handle errors in gpio interrupt dis/enable correctly
+  ESP_ERROR_CHECK(gpio_intr_enable(static_cast<gpio_num_t>(pin)));
+  return true;
+}
+bool gpio_interrupt_disable(u16 pin) {
+  // TODO: handle errors in gpio interrupt dis/enable correctly
+  ESP_ERROR_CHECK(gpio_intr_disable(static_cast<gpio_num_t>(pin)));
+  return true;
+}
+
 bool platform_initialize(PlatformConfiguration config) {
   if (!platform_add_shutdown_handler(&platform_on_shutdown)) {
     HERROR(
@@ -267,12 +280,23 @@ bool platform_initialize(PlatformConfiguration config) {
     }
   }
 
-  // // Internal flash storage
+  // TODO:
+  // Internal flash storage
   // ESP_ERROR_CHECK(nvs_flash_init());
-  // // ESP_ERROR_CHECK(init_fs());
+  // ESP_ERROR_CHECK(init_fs());
 
-  // // I2C init (for LCD display and BME sensors)
-  // ESP_ERROR_CHECK(i2cdev_init());
+  if (config.i2c_enabled) {
+    switch (i2cdev_init()) {
+      case ESP_OK: {
+        HINFO("Initialized I2C.");
+      } break;
+      default: {
+        HERROR("Unknown error occurred initializing I2C.");
+        return false;
+      }
+    }
+  }
+
   return true;
 }
 

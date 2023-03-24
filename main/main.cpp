@@ -31,6 +31,7 @@ extern "C" void app_main(void) {
   // First get important hardware things setup
   platform_initialize({
       .interrupts_enabled = true,
+      .i2c_enabled = true,
   });
 
   // Initialize various subsystems
@@ -43,6 +44,9 @@ extern "C" void app_main(void) {
   event_initialize();
 
   Tachometer tacho(35);
+  while (true) {
+    HINFO("RPM: %lu", tacho.rpm(20));
+  }
 
   // initializer logger if necessary
   // wifi /etc brought up by platform layer?

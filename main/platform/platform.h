@@ -37,7 +37,7 @@ enum class GPIODirection {
 using ISRHandler = void (*)(void* arg);
 
 struct GPIOConfig {
-  uint64_t pin;
+  u16 pin;
   GPIODirection direction;
   GPIOPullMode pull_mode;
   GPIOInterruptType interrupt_type;
@@ -50,8 +50,12 @@ bool gpio_configure(const GPIOConfig& conf);
 // void gpio_set_pull_mode(GPIOPullMode mode);
 // void gpio_wakeup_enable();
 
+bool gpio_interrupt_enable(u16 pin);
+bool gpio_interrupt_disable(u16 pin);
+
 struct PlatformConfiguration {
   bool interrupts_enabled{false};
+  bool i2c_enabled{false};
   bool vfat_enabled{false};
 };
 

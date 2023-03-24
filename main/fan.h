@@ -15,8 +15,10 @@ namespace hakkou {
 
 class Tachometer {
  public:
+  // conversion factor for going from ticks-difference to RPM
   constexpr static float FACTOR = 30 * CONFIG_FAN_TACHO_WINDOW_SIZE * 1000000.0;
-  Tachometer(uint64_t tacho_pin) : tacho_pin_(tacho_pin) {
+
+  Tachometer(u16 tacho_pin) : tacho_pin_(tacho_pin) {
     GPIOConfig conf = {.pin = tacho_pin,
                        .direction = GPIODirection::INPUT,
                        .pull_mode = GPIOPullMode::UP,
@@ -24,23 +26,37 @@ class Tachometer {
                        .isr_handler = callback,
                        .isr_arg = static_cast<void*>(this)};
     gpio_configure(conf);
+
+    // disable interrupt again (despite setup)
+    // will be renabled when RPM is requested on demand below
+    gpio_interrupt_disable(35);
   }
 
-  u32 rpm() {
-    HDEBUG("[TACHOMETER] %lu / %lu", ticks_.back(), ticks_.front());
+  // TODO: Cleanup  the docs and the debug messaging
+  u32 rpm(u64 measurement_period) {
+    u32 rpm = 0;
+    // Since the frequent interrupts could conflict with other complex tasks
+    // such as WIFI etc, we'd either have to pin to a specific core
+    // or we just enable/disable it on request -> means we have to wait a bit
+    // to obtaina  measurement
+    gpio_interrupt_enable(35);
+    platform_sleep(measurement_period);
+
     // The timer_u32 wrap around every ~53 seconds.
     // the following code will still report the correct ticks when a wrap occurs
     // due to usigned integer (Note: do not use auto or anything -> will
     // erronously upcast)
     u32 dt = ticks_.back() - ticks_.front();
-    if (dt == 0) {
-      return 0;
-    } else {
-      u32 ret = FACTOR / timer_delta_us(dt);
-      HDEBUG("[TACHOMETER] %u; %f; %lf; %lu", ret, FACTOR, timer_delta_us(dt),
-             dt);
-      return ret;
+    if (dt != 0) {
+      rpm = FACTOR / timer_delta_us(dt);
+      // HDEBUG("[TACHOMETER] %u; %f; %lf; %lu", rpm, FACTOR,
+      // timer_delta_us(dt),
+      //        dt);
+      return rpm;
     }
+
+    gpio_interrupt_disable(35);
+    return rpm;
   }
 
  private:
@@ -51,7 +67,7 @@ class Tachometer {
 
   void tick() { ticks_.push(timer_u32()); }
 
-  uint64_t tacho_pin_;
+  u16 tacho_pin_;
   SlidingWindowAccumulator<u32, CONFIG_FAN_TACHO_WINDOW_SIZE> ticks_;
 };
 
