@@ -12,27 +12,10 @@ bool initialize_logging() {
   return true;
 }
 
-// void shutdown_logging() {
-//   // TODO: ensure this is called in the esp_reset (if possible)
-//   // TODO: cleanup logging/ write queued entries
-// }
-
-// void log(LogLevel level, const char* message, ...) {
-//   // just call the platform_log for now
-//   va_list list;
-//   va_start(list, message);
-//   platform_log(level, "", message, list);
-//   va_end(list);
-// }
-
-// void report_assertion_failure(const char* expression,
-//                               const char* message,
-//                               const char* file,
-//                               i32 line) {
-//   log_output(LOG_LEVEL_FATAL,
-//              "Assertion Failure: %s, message: '%s', in file %s, line: %d\n",
-//              expression, message, file, line);
-// }
+void shutdown_logging() {
+  // TODO: ensure this is called in the esp_reset (if possible)
+  // TODO: cleanup logging/ write queued entries
+}
 
 void HFATAL(std::string_view message, ...) {
   va_list list;

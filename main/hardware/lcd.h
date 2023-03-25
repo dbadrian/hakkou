@@ -13,13 +13,6 @@
 
 namespace hakkou {
 
-// // basic interaction functions
-// void hd44780_set_character(hd44780_t& lcd,
-//                            std::size_t slot,
-//                            std::array<uint8_t, 8> character) {
-//   hd44780_upload_character(&lcd, slot, character.data());
-// }
-
 esp_err_t write_lcd_data_callback(const hd44780_t* lcd, uint8_t data);
 hd44780_t create_lcd_hw_connection();
 

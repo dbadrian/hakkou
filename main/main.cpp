@@ -53,16 +53,15 @@ extern "C" void app_main(void) {
       {.event_type = EventType::FanDuty, .sender = nullptr, .fan_duty = 0});
 
   LCD* lcd = new LCD();
-  BME280* bme = new BME280(i2c_port_t(CONFIG_BMP280_I2C_ADDRESS),
+  BME280* bme = new BME280(static_cast<i2c_port_t>(CONFIG_BMP280_I2C_ADDRESS),
                            static_cast<gpio_num_t>(CONFIG_I2C_SDA_PIN),
                            static_cast<gpio_num_t>(CONFIG_I2C_SCL_PIN), 2000);
 
   DS18X20* ds18x20 =
       new DS18X20(static_cast<gpio_num_t>(CONFIG_ONEWIRE_PIN), 2000);
 
-  BaseType_t xReturned;
   TaskHandle_t xHandle = NULL;
-  xTaskCreate(task_manager, "TaskManager", 2 * 2048, nullptr, 20, &xHandle);
+  xTaskCreate(task_manager, "TaskManager", 2048, nullptr, 20, &xHandle);
 
   // Now start the main FSM
   vTaskSuspend(NULL);
