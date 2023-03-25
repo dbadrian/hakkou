@@ -5,6 +5,7 @@
 #include "platform/platform.h"
 
 ///////TODO: Temp includes
+#include "hardware/bme280.h"
 #include "hardware/fan.h"
 #include "hardware/lcd.h"
 //////////
@@ -49,6 +50,10 @@ extern "C" void app_main(void) {
       {.event_type = EventType::FanDuty, .sender = nullptr, .fan_duty = 0});
 
   LCD* lcd = new LCD();
+  BME280* bme = new BME280(i2c_port_t(CONFIG_BMP280_I2C_ADDRESS),
+                           static_cast<gpio_num_t>(CONFIG_I2C_SDA_PIN),
+                           static_cast<gpio_num_t>(CONFIG_I2C_SCL_PIN));
+
   platform_sleep(1000);
   HINFO("Trying to send message to lcd");
   static char screen_buf[4][20 + 1] = {{" Press ESC to abort "},

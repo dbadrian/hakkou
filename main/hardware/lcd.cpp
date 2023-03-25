@@ -31,6 +31,8 @@ hd44780_t create_lcd_hw_connection() {
   ESP_ERROR_CHECK(pcf8574_init_desc(
       &lcd_io, 0x27, i2c_port_t(0), static_cast<gpio_num_t>(CONFIG_I2C_SDA_PIN),
       static_cast<gpio_num_t>(CONFIG_I2C_SCL_PIN)));
+  // manually increase the SCL speed to 1mhz
+  // lcd_io.cfg.master.clk_speed = 1'000'000;  // 1mhz
   ESP_ERROR_CHECK(hd44780_init(&_lcd));
 
   return _lcd;

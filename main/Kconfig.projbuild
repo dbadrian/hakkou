@@ -60,11 +60,11 @@ menu "Hakkou Configuration"
     #     help
     #         The pin of the onewire gpio pin
 
-    # config BMP280_I2C_ADDRESS
-    #     hex "BMP280 I2C Address"
-    #     default 0x76
-    #     help
-    #         BMP280
+    config BMP280_I2C_ADDRESS
+        hex "BMP280 I2C Address"
+        default 0x76
+        help
+            BMP280
 
     # config I2C_SDA_PIN
     #     int "I2C SDA pin"
