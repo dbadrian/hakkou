@@ -2,6 +2,20 @@
 
 namespace hakkou {
 
+Tachometer::Tachometer(u16 tacho_pin) : tacho_pin_(tacho_pin) {
+  GPIOConfig conf = {.pin = tacho_pin,
+                     .direction = GPIODirection::INPUT,
+                     .pull_mode = GPIOPullMode::UP,
+                     .interrupt_type = GPIOInterruptType::POSEDGE,
+                     .isr_handler = callback,
+                     .isr_arg = static_cast<void*>(this)};
+  gpio_configure(conf);
+
+  // disable interrupt again (despite setup)
+  // will be renabled when RPM is requested on demand below
+  gpio_interrupt_disable(35);
+}
+
 u16 Tachometer::rpm(u64 measurement_period) {
   u16 rpm = 0;
   ticks_.fill(0);

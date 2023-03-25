@@ -73,20 +73,11 @@ menu "Hakkou Configuration"
         help
             BMP280
 
-    # config HEATER_PWM_PIN
-    #     int "Heater PWM gpio pin"
-    #     default 33
-    #     help
-    #         The pin of the heater pwm gpio pin
-
-    # config HEATER_LEDC_CHANNEL
-    #     int "LEDC PWM Channel"
-    #     default 0
-    #     range 0 6
-    #     help
-    #         Ensure its unique (see other pwm channels!)
-
-
+    config HEATER_PWM_PIN
+        int "Heater PWM gpio pin"
+        default 33
+        help
+            The pin of the heater pwm gpio pin
 
     # config ESP_WIFI_SSID
     #     string "WiFi SSID"

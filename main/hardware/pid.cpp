@@ -28,7 +28,11 @@ float PID::update(float setpoint, float measurement) {
   // integral term
   integrator_ = integrator_ * 0.5f * cfg_.Ki * Ts * (error + prev_err_);
   // anti wind up
-  integrator_ = std::clamp(integrator_, cfg_.i_limit_min, cfg_.i_limit_max);
+  if (integrator_ > cfg_.i_limit_max) {
+    integrator_ = cfg_.i_limit_max;
+  } else if (integrator_ < cfg_.i_limit_min) {
+    integrator_ = cfg_.i_limit_min;
+  }
 
   // differential term [band-limited] (low-pass)
   // this is calculated not on the error signal, but the measurement

@@ -19,20 +19,7 @@ class Tachometer {
   // conversion factor for going from ticks-difference to RPM
   constexpr static float FACTOR = 30 * CONFIG_FAN_TACHO_WINDOW_SIZE * 1000000.0;
 
-  Tachometer(u16 tacho_pin) : tacho_pin_(tacho_pin) {
-    GPIOConfig conf = {.pin = tacho_pin,
-                       .direction = GPIODirection::INPUT,
-                       .pull_mode = GPIOPullMode::UP,
-                       .interrupt_type = GPIOInterruptType::POSEDGE,
-                       .isr_handler = callback,
-                       .isr_arg = static_cast<void*>(this)};
-    gpio_configure(conf);
-
-    // disable interrupt again (despite setup)
-    // will be renabled when RPM is requested on demand below
-    gpio_interrupt_disable(35);
-  }
-
+  Tachometer(u16 tacho_pin);
   // TODO: Cleanup  the docs and the debug messaging
   [[nodiscard]] u16 rpm(u64 measurement_period);
 

@@ -8,6 +8,7 @@
 #include "hardware/bme280.h"
 #include "hardware/fan.h"
 #include "hardware/h_ds18x20.h"
+#include "hardware/heater.h"
 #include "hardware/lcd.h"
 
 #include "task_manager.h"

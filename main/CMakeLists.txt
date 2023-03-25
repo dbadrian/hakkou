@@ -9,6 +9,7 @@ idf_component_register(
         "hardware/bme280.cpp"
         "hardware/h_ds18x20.cpp"
         "hardware/pid.cpp"
+        "hardware/heater.cpp"
         "platform/platform_esp32.cpp"
     INCLUDE_DIRS "."
 )
