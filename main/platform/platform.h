@@ -67,6 +67,7 @@ struct PlatformConfiguration {
   bool interrupts_enabled{false};
   bool i2c_enabled{false};
   bool vfat_enabled{false};
+  bool nvs_enabled{false};
 };
 
 bool platform_initialize(PlatformConfiguration config);

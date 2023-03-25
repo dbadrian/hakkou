@@ -27,7 +27,7 @@ class LCD {
   // TODO MAKE CONFIG
   constexpr static std::size_t Rows = CONFIG_LCD_ROWS;
   constexpr static std::size_t Cols = CONFIG_LCD_COLS;
-  constexpr static u32 STACK_SIZE = 2 * 2048;
+  constexpr static u32 STACK_SIZE = 2304;
   constexpr static UBaseType_t PRIORITY = 9;
 
  public:

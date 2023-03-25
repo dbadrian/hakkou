@@ -9,6 +9,8 @@
 // #include "hardware/ds18x20.h"
 #include "hardware/fan.h"
 #include "hardware/lcd.h"
+
+#include "task_manager.h"
 //////////
 
 #include "esp_log.h"
@@ -55,9 +57,13 @@ extern "C" void app_main(void) {
                            static_cast<gpio_num_t>(CONFIG_I2C_SDA_PIN),
                            static_cast<gpio_num_t>(CONFIG_I2C_SCL_PIN));
 
-  // DS18X20* food_sensors =
-  //     new DS18X20(static_cast<gpio_num_t>(CONFIG_ONEWIRE_PIN));
-  platform_sleep(1000);
+  BaseType_t xReturned;
+  TaskHandle_t xHandle = NULL;
+  xTaskCreate(task_manager, "TaskManager", 2 * 2048, nullptr, 9, &xHandle);
+
+  // // DS18X20* food_sensors =
+  // //     new DS18X20(static_cast<gpio_num_t>(CONFIG_ONEWIRE_PIN));
+  // platform_sleep(1000);
   HINFO("Trying to send message to lcd");
   static char screen_buf[4][20 + 1] = {{" Press ESC to abort "},
                                        {" Press ESC to abort "},
@@ -70,8 +76,8 @@ extern "C" void app_main(void) {
                                         {" Press ESC to abort "},
                                         {" Press KO to cont.  "}};
   lcd->update(screen_bu2f[0]);
-  // initializer logger if necessary
-  // wifi /etc brought up by platform layer?
+  // initializer logger if necessary wifi / etc brought up by platform layer
+  //     ?
 
   // Now start the main FSM
   vTaskSuspend(NULL);

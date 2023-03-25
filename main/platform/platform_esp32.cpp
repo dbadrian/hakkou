@@ -379,7 +379,7 @@ bool platform_initialize(PlatformConfiguration config) {
 
   // TODO:
   // Internal flash storage
-  // ESP_ERROR_CHECK(nvs_flash_init());
+  ESP_ERROR_CHECK(nvs_flash_init());
   // ESP_ERROR_CHECK(init_fs());
 
   if (config.i2c_enabled) {

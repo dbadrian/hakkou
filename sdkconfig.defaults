@@ -13,3 +13,6 @@ CONFIG_LOG_MAXIMUM_LEVEL=4
 # TODO set default to release
 # TODO set default not INFO or above (maybe acutally warn and above)
 # TODO disable runtime infos and exceptiosn and asserts
+
+# for debugging with task manager
+#define configUSE_TRACE_FACILITY=y

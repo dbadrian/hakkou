@@ -11,7 +11,7 @@ namespace hakkou {
 
 class BME280 {
  public:
-  constexpr static uint32_t STACK_SIZE = 2 * 3048;
+  constexpr static uint32_t STACK_SIZE = 2304;
   constexpr static UBaseType_t PRIORITY = 9;  // TODO Set priority elsewhere
 
   BME280(i2c_port_t address, gpio_num_t sda_gpio, gpio_num_t scl_gpio);
