@@ -12,4 +12,4 @@ FetchContent_MakeAvailable(espidflib)
 
 set(EXTRA_COMPONENT_DIRS ${espidflib_SOURCE_DIR}/components)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(hakkou-esp)
+project(hakkou)

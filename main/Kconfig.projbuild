@@ -1,19 +1,25 @@
 menu "Hakkou Configuration"
 
-    # Various pins
+
+
+    # Fan    
+    config FAN_PWM_PIN
+        int "Fan PWM gpio pin"
+        default 32
+        help
+            The pin of the fan pwm gpio pin
+
     config FAN_TACHO_PIN
         int "Fan TACHO gpio pin"
         default 35
         help
             The pin of the fan tacho gpio pin
 
-    # Different buffer sizes etc.
     config FAN_TACHO_WINDOW_SIZE
         int "Fan Tacho Window Size"
         default 5
         help
             The pin of the fan's tacho's window size (ring buffer)
-            # 
 
 
     # LCD
@@ -53,7 +59,8 @@ menu "Hakkou Configuration"
     #     default 0x6B41
     #     help
     #         Address of IR remote control            
-
+        
+    # Sensors
     config ONEWIRE_PIN
         int "Onewire gpio pin"
         default 27
@@ -65,18 +72,6 @@ menu "Hakkou Configuration"
         default 0x76
         help
             BMP280
-
-    # config I2C_SDA_PIN
-    #     int "I2C SDA pin"
-    #     default 26
-    #     help
-    #         I2C SDA pin
-
-    # config I2C_SCL_PIN
-    #     int "I2C SCL pin"
-    #     default 25
-    #     help
-    #         I2C SCL pin
 
     # config HEATER_PWM_PIN
     #     int "Heater PWM gpio pin"
@@ -91,24 +86,7 @@ menu "Hakkou Configuration"
     #     help
     #         Ensure its unique (see other pwm channels!)
 
-    # config FAN_PWM_PIN
-    #     int "Fan PWM gpio pin"
-    #     default 32
-    #     help
-    #         The pin of the fan pwm gpio pin
 
-    # config FAN_PWM_CHANNEL
-    #     int "Fan PWM Channel"
-    #     default 1
-    #     range 0 6
-    #     help
-    #         Ensure its unique (see other pwm channels!)
-
-    # config FAN_TACHO_PIN
-    #     int "Fan TACHO gpio pin"
-    #     default 35
-    #     help
-    #         The pin of the fan tacho gpio pin
 
     # config ESP_WIFI_SSID
     #     string "WiFi SSID"

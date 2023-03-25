@@ -12,18 +12,8 @@ class SlidingWindowAccumulator {
     idx = (idx + 1) % window_size;
   }
 
-  // // TODO: use accumulate on the outside
-  // // and instead use the the actual indices to expose
-  // // .begin and .end iterators -> no more initalization problems as well
-  // [[nodiscard]] T accumulate() const {
-  //   return std::accumulate(readings_.begin(), readings_.end(), 0.0f) /
-  //          readings_.size();
-  // }
-
-  // [[nodiscard]] T update_and_accumulate(T val) {
-  //   update(val);
-  //   return accumulate();
-  // }
+  auto begin() { return readings_.begin(); }
+  auto end() { return readings_.end(); }
 
   [[nodiscard]] T front() const { return readings_[idx]; }
 
@@ -34,6 +24,8 @@ class SlidingWindowAccumulator {
   [[nodiscard]] std::size_t get_idx() { return idx; }
 
   void fill(T val) { readings_.fill(val); }
+
+  std::size_t size() { return window_size; }
 
  private:
   std::size_t idx{0};

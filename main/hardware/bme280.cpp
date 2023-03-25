@@ -4,7 +4,11 @@
 
 namespace hakkou {
 
-BME280::BME280(i2c_port_t address, gpio_num_t sda_gpio, gpio_num_t scl_gpio) {
+BME280::BME280(i2c_port_t address,
+               gpio_num_t sda_gpio,
+               gpio_num_t scl_gpio,
+               u64 refresh_ms)
+    : refresh_ms_(refresh_ms) {
   // Following tutorial:
   // github.com/UncleRus/esp-idf-lib/blob/master/examples/bmp280/main/main.c
 

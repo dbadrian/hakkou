@@ -8,16 +8,14 @@ namespace hakkou {
 // using FreeRTOSPtr =
 //     std::unique_ptr<T, decltype([](T* ptr) { vPortFree(ptr); })>;
 
+// TODO: Add heap information (free/allocated...fragmentation?)
+
 void task_manager(void*) {
   UBaseType_t num_tasks = 0;
   //   FreeRTOSPtr<TaskStatus_t> task_array;
 
   constexpr u8 line_length = 100 + 1;
   constexpr u8 max_tasks = 100;
-
-  // temp variables for computing task stats
-  u32 total_runtime;
-  u32 task_runtime_percentage;
 
   // allocate the string buffer
   char* buf =
