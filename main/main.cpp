@@ -5,7 +5,8 @@
 #include "platform/platform.h"
 
 ///////TODO: Temp includes
-#include "fan.h"
+#include "hardware/fan.h"
+#include "hardware/lcd.h"
 //////////
 
 #include "esp_log.h"
@@ -47,6 +48,20 @@ extern "C" void app_main(void) {
   event_post(
       {.event_type = EventType::FanDuty, .sender = nullptr, .fan_duty = 0});
 
+  LCD* lcd = new LCD();
+  platform_sleep(1000);
+  HINFO("Trying to send message to lcd");
+  static char screen_buf[4][20 + 1] = {{" Press ESC to abort "},
+                                       {" Press ESC to abort "},
+                                       {" Press ESC to abort "},
+                                       {" Press OK to cont.  "}};
+  lcd->update(screen_buf[0]);
+  platform_sleep(5000);
+  static char screen_bu2f[4][20 + 1] = {{" Press ESC to abort "},
+                                        {" Press ABC to abort "},
+                                        {" Press ESC to abort "},
+                                        {" Press KO to cont.  "}};
+  lcd->update(screen_bu2f[0]);
   // initializer logger if necessary
   // wifi /etc brought up by platform layer?
 

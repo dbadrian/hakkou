@@ -1,4 +1,7 @@
 {
   "cmake.configureOnOpen": false,
-  "idf.adapterTargetName": "esp32"
+  "idf.adapterTargetName": "esp32",
+  "files.associations": {
+    "defines.h": "c"
+  }
 }

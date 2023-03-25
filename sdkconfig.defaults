@@ -7,5 +7,8 @@ CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partition_table.csv"
 CONFIG_PARTITION_TABLE_FILENAME="partition_table.csv"
 
+# disable locks in the i2cdev (LCD) driver -> much faster
+CONFIG_I2CDEV_NOLOCK=y
+
 # logging
 CONFIG_LOG_MAXIMUM_LEVEL=4

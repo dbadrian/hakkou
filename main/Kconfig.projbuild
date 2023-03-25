@@ -16,6 +16,32 @@ menu "Hakkou Configuration"
             # 
 
 
+    # LCD
+    config LCD_ROWS
+        int "LCD Rows"
+        default 4
+        help
+            LCD Rows
+
+    config LCD_COLS
+        int "LCD Cols"
+        default 20
+        help
+            LCD Cols
+
+    # I2C
+    config I2C_SDA_PIN
+        int "I2C SDA pin"
+        default 26
+        help
+            I2C SDA pin
+
+    config I2C_SCL_PIN
+        int "I2C SCL pin"
+        default 25
+        help
+            I2C SCL pin
+
     # config IR_RMT_CHANNEL
     #     int "RMT Channel"
     #     default 2
