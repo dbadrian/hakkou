@@ -1,6 +1,7 @@
 #pragma once
 
 #include "defines.h"
+#include "internal_types.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -16,10 +17,10 @@ enum class EventType : u16 {
   HumidityAmbient,
   TemperatureAmbient,
   TemperatureFood,
-  PIDSetLevel,
   FanRPM,
   FanDuty,
   HeaterDuty,
+  ScreenUpdate,
   //
   NUM_EVENTS,
 };
@@ -36,6 +37,8 @@ struct Event {
     f32 temperature;
     f32 humidity;
     u16 code;
+    // 4 * 21 = 84 bytes
+    ScreenData screen_data;
   };
 };
 // TODO: Static assert the sizeevent_initialize(

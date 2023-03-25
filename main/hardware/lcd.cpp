@@ -38,15 +38,15 @@ hd44780_t create_lcd_hw_connection() {
   return _lcd;
 }
 
-void LCD::update(const char* text) {
+void LCD::update(const ScreenData& data) {
   // TODO: Again...not threadsafe
 
   // iterate over each line in buf and check if something changed
   // by byte-wise comparison
   for (std::size_t i = 0; i < Rows; i++) {
-    dirty_[i] = memcmp(buf[i], text + i * (Cols + 1), Cols + 1) != 0;
+    dirty_[i] = memcmp(buf[i], data[i].data(), Cols + 1) != 0;
     if (dirty_[i]) {
-      memcpy(buf[i], text + i * (Cols + 1), Cols);
+      memcpy(buf[i], data[i].data(), Cols);
     }
   }
 

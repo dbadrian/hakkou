@@ -39,4 +39,5 @@ STATIC_ASSERT(sizeof(i64) == 8, "Type `i64` expected to be 8 bytes.");
 
 STATIC_ASSERT(sizeof(f32) == 4, "Type `f32` expected to be 4 bytes.");
 STATIC_ASSERT(sizeof(f64) == 8, "Type `f64` expected to be 8 bytes.");
-}
+
+}  // namespace hakkou

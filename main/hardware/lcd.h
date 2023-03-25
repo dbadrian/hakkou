@@ -1,11 +1,11 @@
 
 #pragma once
 #include "defines.h"
+#include "event.h"
 #include "logger.h"
 
 // TODO: ESP-IDF specific?
 #include <hd44780.h>
-#define CONFIG_I2CDEV_NOLOCK
 #include <pcf8574.h>
 
 #include <cstring>
@@ -27,9 +27,22 @@ class LCD {
   LCD() : lcd_(create_lcd_hw_connection()) {
     task_handle_ = xTaskCreateStatic(initialize, "LCD", STACK_SIZE, this,
                                      PRIORITY, task_buf_, &xTaskBuffer);
+
+    cb_handle_ = event_register(EventType::ScreenUpdate,
+                                static_cast<void*>(this), update);
   }
 
-  void update(const char* text);
+  ~LCD() {
+    event_unregister(cb_handle_.value());
+    // TODO: ungregister
+  }
+
+  static CallbackResponse update(Event event, void* listener) {
+    static_cast<LCD*>(listener)->update(event.screen_data);
+    return CallbackResponse::Stop;
+  }
+
+  void update(const ScreenData& data);
 
   // TODO: This class is not thread-safe
   void clear() { hd44780_clear(&lcd_); }
@@ -64,6 +77,8 @@ class LCD {
   StackType_t task_buf_[STACK_SIZE];
   StaticTask_t xTaskBuffer;
   TaskHandle_t task_handle_;
+
+  std::optional<EventHandle> cb_handle_;
 };
 
 }  // namespace hakkou

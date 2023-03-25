@@ -1,6 +1,7 @@
 
-// #include "defines.h"
+#include "defines.h"
 #include "event.h"
+#include "internal_types.h"
 #include "logger.h"
 #include "platform/platform.h"
 
@@ -63,6 +64,19 @@ extern "C" void app_main(void) {
 
   TaskHandle_t xHandle = NULL;
   xTaskCreate(task_manager, "TaskManager", 2048, nullptr, 20, &xHandle);
+
+  platform_sleep(3000);
+  HINFO("POSTING CLD EVENT");
+
+  platform_sleep(3000);
+  HINFO("POSTING CLD EVENT");
+  event_post(Event{
+      .event_type = EventType::ScreenUpdate,
+      .screen_data = {{{"                    "},
+                       {"      > CONT. <     "},
+                       {"   asdsd            "},
+                       {"                    "}}},
+  });
 
   // Now start the main FSM
   vTaskSuspend(NULL);
