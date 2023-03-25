@@ -44,11 +44,10 @@ void LCD::update(const char* text) {
   // iterate over each line in buf and check if something changed
   // by byte-wise comparison
   for (std::size_t i = 0; i < Rows; i++) {
-    // dirty_[i] = memcmp(buf[i], text + i * (Cols + 1), Cols + 1) != 0;
-    // if (dirty_[i]) {
-    // }
-    // TODO: Copy rowwise -> tahts dumb
-    memcpy(buf[i], text + i * (Cols + 1), Cols);
+    dirty_[i] = memcmp(buf[i], text + i * (Cols + 1), Cols + 1) != 0;
+    if (dirty_[i]) {
+      memcpy(buf[i], text + i * (Cols + 1), Cols);
+    }
   }
 
   xTaskNotify(task_handle_, 1, eSetValueWithOverwrite);

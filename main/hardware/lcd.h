@@ -53,10 +53,10 @@ class LCD {
         HDEBUG("Updating LCD");
         // got notified to update LCD
         for (std::size_t i = 0; i < Rows; i++) {
-          // if (dirty_[i]) {
-          hd44780_gotoxy(&lcd_, 0, i);
-          hd44780_puts(&lcd_, buf[i]);
-          // }
+          if (dirty_[i]) {
+            hd44780_gotoxy(&lcd_, 0, i);
+            hd44780_puts(&lcd_, buf[i]);
+          }
         }
       }
     }
