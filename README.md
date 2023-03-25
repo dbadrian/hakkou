@@ -1,3 +1,9 @@
+> **Warning**: 
+> This project is under development and not useable. I recently started a complete re-write (this repo). The original one is not disclosed at this point.
+> More details below (slightly stream of consciousness right now...)
+
+
+
 # Hakkou
 
 `Hakkou` (from the Japanese 発酵 \[はっこう\], fermentation) is a small personal project to develop a temperature- (and in future humidity-) controlled fermentation box.
