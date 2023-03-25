@@ -20,19 +20,19 @@ void task_manager(void*) {
   // allocate the string buffer
   char* buf =
       static_cast<char*>(malloc(line_length * max_tasks * sizeof(char)));
-  sprintf(buf, "%-15s     %10s     %4s     %8s     %5s\n", "Task Name",
+  sprintf(buf, "%-15s     %10s     %8s     %4s     %5s\n", "Task Name",
           "Stack HM", "Priority", "Core", "%Time");
   sprintf(buf + line_length,
           "==============================================================\n");
 
   UBaseType_t x;
   unsigned long ulTotalRunTime, ulStatsAsPercentage;
+  std::vector<TaskStatus_t> tasks;
+  tasks.reserve(max_tasks - 20);
+
   while (true) {
     num_tasks = uxTaskGetNumberOfTasks();
-
-    std::vector<TaskStatus_t> tasks;
     tasks.resize(num_tasks);
-
     num_tasks = uxTaskGetSystemState(tasks.data(), num_tasks, &ulTotalRunTime);
 
     char* ptr = buf + 2 * line_length;
@@ -78,13 +78,34 @@ void task_manager(void*) {
 
       ptr = ptr + line_length;
     }
+    sprintf(ptr,
+            "==============================================================\n");
+    ptr = ptr + line_length;
+
+    multi_heap_info_t heap_stats;
+    heap_caps_get_info(&heap_stats, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+
+    sprintf(ptr, "Total alloc bytes : %8u\n", heap_stats.total_allocated_bytes);
+    ptr = ptr + line_length;
+    sprintf(ptr, "Total free bytes  : %8u\n", heap_stats.total_free_bytes);
+    ptr = ptr + line_length;
+    sprintf(ptr, "Largest free block: %8u\n", heap_stats.largest_free_block);
+    ptr = ptr + line_length;
+    sprintf(ptr, "Free blocks : %4u\n", heap_stats.free_blocks);
+    ptr = ptr + line_length;
+    sprintf(ptr, "Total blocks: %4u\n", heap_stats.total_blocks);
+    ptr = ptr + line_length;
 
     // add a bottom line
     sprintf(ptr,
             "==============================================================\n");
+    ptr = ptr + line_length;
+
+    sprintf(ptr, "Total Runtime: %fs\n",
+            ulTotalRunTime * portTICK_PERIOD_MS / 100000.0);
 
     ptr = buf;
-    for (x = 0; x < num_tasks + 3; x++) {
+    for (x = 0; x < num_tasks + 10; x++) {
       printf("%s", ptr);
       ptr = ptr + line_length;
     }

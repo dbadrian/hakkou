@@ -64,10 +64,6 @@ extern "C" void app_main(void) {
   TaskHandle_t xHandle = NULL;
   xTaskCreate(task_manager, "TaskManager", 2 * 2048, nullptr, 20, &xHandle);
 
-  // // DS18X20* food_sensors =
-  // //     new DS18X20(static_cast<gpio_num_t>(CONFIG_ONEWIRE_PIN));
-  // platform_sleep(1000);
-
   // Now start the main FSM
   vTaskSuspend(NULL);
 }
