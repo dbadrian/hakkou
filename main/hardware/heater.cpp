@@ -10,11 +10,18 @@ Heater::Heater(u8 pwm_pin) : pwm_pin_(pwm_pin) {
     HFATAL("Couldn't configure PWM channel for Heater.");
   }
 
+  std::optional<EventHandle> handle = event_register(
+      EventType::HeaterDuty, static_cast<void*>(this), Heater::set_duty);
+  if (!handle) {
+    HFATAL("Couldn't register heater duty callback!");
+  }
+
   HINFO("Created Heater");
 }
 
-void Heater::set_duty(u32 duty) {
+CallbackResponse Heater::set_duty(u32 duty) {
   pwm_set_duty(pwm_channel_.value(), duty * PWM_FACTOR);
+  return CallbackResponse::Stop;
 }
 
 }  // namespace hakkou

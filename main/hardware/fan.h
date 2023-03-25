@@ -63,11 +63,11 @@ class Fan4W {
 
   Fan4W(u16 pwm_pin, u16 tacho_pin);
 
-  static CallbackResponse set_duty_cb(Event event, void* listener) {
-    return static_cast<Fan4W*>(listener)->set_duty_cb(event.fan_duty);
+  static CallbackResponse set_duty(Event event, void* listener) {
+    return static_cast<Fan4W*>(listener)->set_duty(event.fan_duty);
   }
 
-  CallbackResponse set_duty_cb(u32 duty) {
+  CallbackResponse set_duty(u32 duty) {
     HINFO("Got duty event %lu", duty);
     pwm_set_duty(pwm_channel_.value(), duty * SCALING_FACTOR);
     return CallbackResponse::Stop;

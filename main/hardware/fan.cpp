@@ -45,7 +45,7 @@ Fan4W::Fan4W(u16 pwm_pin, u16 tacho_pin)
     : pwm_pin_(pwm_pin), tacho_(tacho_pin) {
   // Register the callback to obtain and set internal fan duty
   std::optional<EventHandle> handle = event_register(
-      EventType::FanDuty, static_cast<void*>(this), Fan4W::set_duty_cb);
+      EventType::FanDuty, static_cast<void*>(this), Fan4W::set_duty);
   if (!handle) {
     HFATAL("Couldn't register fan duty callback!");
   }

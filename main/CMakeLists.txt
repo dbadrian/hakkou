@@ -4,6 +4,7 @@ idf_component_register(
         "logger.cpp"
         "event.cpp"
         "preferences.cpp"
+        # "controller.cpp"
         "hardware/fan.cpp"
         "hardware/lcd.cpp"
         "hardware/bme280.cpp"

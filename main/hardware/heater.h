@@ -1,6 +1,7 @@
 #pragma once
 
 #include "defines.h"
+#include "event.h"
 #include "logger.h"
 #include "platform/platform.h"
 
@@ -16,7 +17,11 @@ class Heater {
 
   Heater(u8 pwm_pin);
 
-  void set_duty(u32 duty);
+  static CallbackResponse set_duty(Event event, void* listener) {
+    return static_cast<Heater*>(listener)->set_duty(event.heater_duty);
+  }
+
+  CallbackResponse set_duty(u32 duty);
 
  private:
   u8 pwm_pin_;

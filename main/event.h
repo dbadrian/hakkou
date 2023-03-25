@@ -19,6 +19,7 @@ enum class EventType : u16 {
   PIDSetLevel,
   FanRPM,
   FanDuty,
+  HeaterDuty,
   //
   NUM_EVENTS,
 };
@@ -29,6 +30,7 @@ struct Event {
   void* sender = nullptr;
   // 32 bit
   union {
+    u32 heater_duty;
     u32 fan_duty;
     u16 fan_rpm;
     f32 temperature;
