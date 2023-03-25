@@ -5,6 +5,7 @@ idf_component_register(
         "event.cpp"
         "hardware/fan.cpp"
         "hardware/lcd.cpp"
+        "hardware/bme280.cpp"
         "platform/platform_esp32.cpp"
     INCLUDE_DIRS "."
 )

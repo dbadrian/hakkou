@@ -82,6 +82,30 @@ void platform_sleep(u64 ms) {
   vTaskDelay(pdMS_TO_TICKS(ms));
 }
 
+class HMutex {
+ public:
+  HMutex() {
+    xSemaphore_ = xSemaphoreCreateMutexStatic(&xMutexBuffer_);
+    /* The pxMutexBuffer was not NULL, so it is expected that the
+    handle will not be NULL. */
+    configASSERT(xSemaphore_);
+  }
+
+  // Blocks until a lock can be acquired for the current execution agent
+  // (thread, process, task). If an exception is thrown, no lock is acquired.
+  void lock();
+
+  [[nodiscard]] bool lock(TickType_t xTicksToWait);
+
+  [[nodiscard]] bool try_lock();
+
+  void unlock();
+
+ private:
+  SemaphoreHandle_t xSemaphore_{nullptr};
+  StaticSemaphore_t xMutexBuffer_;
+};
+
 // allocation functions for freerots are also mapped to heap_caps_malloc
 // so no need to us the freertos functions
 // ref:

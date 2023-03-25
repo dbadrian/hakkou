@@ -6,6 +6,7 @@
 
 ///////TODO: Temp includes
 #include "hardware/bme280.h"
+// #include "hardware/ds18x20.h"
 #include "hardware/fan.h"
 #include "hardware/lcd.h"
 //////////
@@ -54,6 +55,8 @@ extern "C" void app_main(void) {
                            static_cast<gpio_num_t>(CONFIG_I2C_SDA_PIN),
                            static_cast<gpio_num_t>(CONFIG_I2C_SCL_PIN));
 
+  // DS18X20* food_sensors =
+  //     new DS18X20(static_cast<gpio_num_t>(CONFIG_ONEWIRE_PIN));
   platform_sleep(1000);
   HINFO("Trying to send message to lcd");
   static char screen_buf[4][20 + 1] = {{" Press ESC to abort "},

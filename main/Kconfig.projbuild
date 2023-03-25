@@ -54,11 +54,11 @@ menu "Hakkou Configuration"
     #     help
     #         Address of IR remote control            
 
-    # config ONEWIRE_PIN
-    #     int "Onewire gpio pin"
-    #     default 27
-    #     help
-    #         The pin of the onewire gpio pin
+    config ONEWIRE_PIN
+        int "Onewire gpio pin"
+        default 27
+        help
+            The pin of the onewire gpio pin
 
     config BMP280_I2C_ADDRESS
         hex "BMP280 I2C Address"

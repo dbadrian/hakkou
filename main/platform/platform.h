@@ -11,8 +11,9 @@ namespace hakkou {
 
 void platform_log(LogLevel level, std::string_view message, va_list args);
 
-// task related
+// task / thread related
 void platform_sleep(u64 ms);
+class HMutex;
 
 // hardware related things
 enum class GPIOPullMode { UP, DOWN, UP_DOWN };
