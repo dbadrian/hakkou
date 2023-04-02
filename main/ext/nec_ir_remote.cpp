@@ -13,8 +13,6 @@
 #include "esp_check.h"
 #include "nec_ir_remote.h"
 
-static const char* TAG = "nec_encoder";
-
 typedef struct {
   rmt_encoder_t
       base;  // the base "class", declares the standard encoder interface
@@ -139,10 +137,8 @@ void cleanup_nec_encoder(rmt_ir_nec_encoder_t* nec_encoder);
 
 esp_err_t rmt_new_ir_nec_encoder(const ir_nec_encoder_config_t* config,
                                  rmt_encoder_handle_t* ret_encoder) {
-  esp_err_t ret = ESP_OK;
   rmt_ir_nec_encoder_t* nec_encoder = NULL;
-  // ESP_GOTO_ON_FALSE(config && ret_encoder, ESP_ERR_INVALID_ARG, err, TAG,
-  //                   "invalid argument");
+
   if (!config && ret_encoder) {
     cleanup_nec_encoder(nec_encoder);
     hakkou::HERROR("invalid argument");
@@ -151,8 +147,6 @@ esp_err_t rmt_new_ir_nec_encoder(const ir_nec_encoder_config_t* config,
 
   nec_encoder = static_cast<rmt_ir_nec_encoder_t*>(
       calloc(1, sizeof(rmt_ir_nec_encoder_t)));
-  // ESP_GOTO_ON_FALSE(nec_encoder, ESP_ERR_NO_MEM, err, TAG,
-  //                   "no mem for ir nec encoder");
 
   if (!nec_encoder) {
     cleanup_nec_encoder(nec_encoder);
@@ -165,9 +159,6 @@ esp_err_t rmt_new_ir_nec_encoder(const ir_nec_encoder_config_t* config,
   nec_encoder->base.reset = rmt_ir_nec_encoder_reset;
 
   rmt_copy_encoder_config_t copy_encoder_config = {};
-  // ESP_GOTO_ON_ERROR(
-  //     rmt_new_copy_encoder(&copy_encoder_config, &nec_encoder->copy_encoder),
-  //     err, TAG, "create copy encoder failed");
 
   if (rmt_new_copy_encoder(&copy_encoder_config, &nec_encoder->copy_encoder) !=
       ESP_OK) {
@@ -208,9 +199,6 @@ esp_err_t rmt_new_ir_nec_encoder(const ir_nec_encoder_config_t* config,
               .level1 = 0,
           },
   };
-  // ESP_GOTO_ON_ERROR(
-  //     rmt_new_bytes_encoder(&bytes_encoder_config,
-  //     &nec_encoder->bytes_encoder), err, TAG, "create bytes encoder failed");
 
   if (rmt_new_bytes_encoder(&bytes_encoder_config,
                             &nec_encoder->bytes_encoder) != ESP_OK) {

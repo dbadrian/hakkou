@@ -21,6 +21,8 @@ enum class EventType : u16 {
   FanDuty,
   HeaterDuty,
   ScreenUpdate,
+  IRCode,
+  GUI,
   //
   NUM_EVENTS,
 };
@@ -37,6 +39,8 @@ struct Event {
     f32 temperature;
     f32 humidity;
     u16 code;
+    NECScanCode scan_code;
+    GUIEvent gui_event;
     // 4 * 21 = 84 bytes
     ScreenData screen_data;
   };
@@ -87,7 +91,7 @@ struct EventSystemState {
       callbacks;
 };
 
-bool event_initialize();
+[[nodiscard]] bool event_initialize();
 
 [[nodiscard]] std::optional<EventHandle>
 event_register(EventType event_type, void* listener, OnEventCallback callback);

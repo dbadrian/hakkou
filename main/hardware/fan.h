@@ -38,7 +38,7 @@ class Tachometer {
 // TODO: Document a bit more what each variable means
 class Fan4W {
  public:
-  constexpr static u32 STACK_SIZE = 2048;
+  constexpr static u32 STACK_SIZE = 2048 + 512;
   constexpr static UBaseType_t PRIORITY = 9;  // TODO: config!
 
   constexpr static int PWM_FREQ = 25000;  // 25khz, as defined by Intel standard

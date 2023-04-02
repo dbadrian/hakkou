@@ -48,17 +48,23 @@ menu "Hakkou Configuration"
         help
             I2C SCL pin
 
-    # config IR_RMT_CHANNEL
-    #     int "RMT Channel"
-    #     default 2
-    #     help
-    #         Set uniquely assigned RMT channel for the IR
+    config IR_RMT_CHANNEL
+        int "RMT Channel"
+        default 2
+        help
+            Set uniquely assigned RMT channel for the IR
 
-    # config IR_ADDR
-    #     hex "RMT Channel"
-    #     default 0x6B41
-    #     help
-    #         Address of IR remote control            
+    config IR_PIN
+        int "IR_PIN"
+        default 34
+        help
+            IR_PIN
+
+    config IR_ADDR
+        hex "RMT Channel"
+        default 0x6B41
+        help
+            Address of IR remote control            
         
     # Sensors
     config ONEWIRE_PIN

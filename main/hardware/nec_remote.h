@@ -1,4 +1,6 @@
 #pragma once
+#include "defines.h"
+#include "event.h"
 #include "logger.h"
 #include "platform/platform.h"
 
@@ -22,6 +24,8 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 
+#include <optional>
+
 #define EXAMPLE_IR_RESOLUTION_HZ 1000000  // 1MHz resolution, 1 tick = 1us
 #define EXAMPLE_IR_TX_GPIO_NUM 18
 // #define static_cast <gpio_num_t>(CONFIG_IR_PIN) 19
@@ -39,12 +43,6 @@
 #define NEC_PAYLOAD_ONE_DURATION_1 1690
 #define NEC_REPEAT_CODE_DURATION_0 9000
 #define NEC_REPEAT_CODE_DURATION_1 2250
-
-/**
- * @brief Saving NEC decode results
- */
-static uint16_t s_nec_code_address;
-static uint16_t s_nec_code_command;
 
 /**
  * @brief Check whether a duration is within expected range
@@ -78,41 +76,41 @@ static bool nec_parse_logic1(rmt_symbol_word_t* rmt_nec_symbols) {
 /**
  * @brief Decode RMT symbols into NEC address and command
  */
-static bool nec_parse_frame(rmt_symbol_word_t* rmt_nec_symbols) {
+static std::optional<hakkou::NECScanCode> nec_parse_frame(
+    rmt_symbol_word_t* rmt_nec_symbols) {
   rmt_symbol_word_t* cur = rmt_nec_symbols;
-  uint16_t address = 0;
-  uint16_t command = 0;
+  hakkou::NECScanCode code;
+  code.is_repeated = false;
+
   bool valid_leading_code =
       nec_check_in_range(cur->duration0, NEC_LEADING_CODE_DURATION_0) &&
       nec_check_in_range(cur->duration1, NEC_LEADING_CODE_DURATION_1);
   if (!valid_leading_code) {
-    return false;
+    return std::nullopt;
   }
   cur++;
   for (int i = 0; i < 16; i++) {
     if (nec_parse_logic1(cur)) {
-      address |= 1 << i;
+      code.address |= 1 << i;
     } else if (nec_parse_logic0(cur)) {
-      address &= ~(1 << i);
+      code.address &= ~(1 << i);
     } else {
-      return false;
+      return std::nullopt;
     }
     cur++;
   }
   for (int i = 0; i < 16; i++) {
     if (nec_parse_logic1(cur)) {
-      command |= 1 << i;
+      code.command |= 1 << i;
     } else if (nec_parse_logic0(cur)) {
-      command &= ~(1 << i);
+      code.command &= ~(1 << i);
     } else {
-      return false;
+      return std::nullopt;
     }
     cur++;
   }
-  // save address and command
-  s_nec_code_address = address;
-  s_nec_code_command = command;
-  return true;
+
+  return code;
 }
 
 /**
@@ -125,43 +123,11 @@ static bool nec_parse_frame_repeat(rmt_symbol_word_t* rmt_nec_symbols) {
                             NEC_REPEAT_CODE_DURATION_1);
 }
 
-/**
- * @brief Decode RMT symbols into NEC scan code and print the result
- */
-static void example_parse_nec_frame(rmt_symbol_word_t* rmt_nec_symbols,
-                                    size_t symbol_num) {
-  printf("NEC frame start---\r\n");
-  for (size_t i = 0; i < symbol_num; i++) {
-    printf("{%d:%d},{%d:%d}\r\n", rmt_nec_symbols[i].level0,
-           rmt_nec_symbols[i].duration0, rmt_nec_symbols[i].level1,
-           rmt_nec_symbols[i].duration1);
-  }
-  printf("---NEC frame end: ");
-  // decode RMT symbols
-  switch (symbol_num) {
-    case 34:  // NEC normal frame
-      if (nec_parse_frame(rmt_nec_symbols)) {
-        printf("Address=%04X, Command=%04X\r\n\r\n", s_nec_code_address,
-               s_nec_code_command);
-      }
-      break;
-    case 2:  // NEC repeat frame
-      if (nec_parse_frame_repeat(rmt_nec_symbols)) {
-        printf("Address=%04X, Command=%04X, repeat\r\n\r\n", s_nec_code_address,
-               s_nec_code_command);
-      }
-      break;
-    default:
-      printf("Unknown NEC frame\r\n\r\n");
-      break;
-  }
-}
-
-static bool example_rmt_rx_done_callback(rmt_channel_handle_t channel,
-                                         const rmt_rx_done_event_data_t* edata,
-                                         void* user_data) {
+static bool rx_callback(rmt_channel_handle_t channel,
+                        const rmt_rx_done_event_data_t* edata,
+                        void* queue) {
   BaseType_t high_task_wakeup = pdFALSE;
-  QueueHandle_t receive_queue = (QueueHandle_t)user_data;
+  QueueHandle_t receive_queue = static_cast<QueueHandle_t>(queue);
   // send the received RMT symbols to the parser task
   xQueueSendFromISR(receive_queue, edata, &high_task_wakeup);
   return high_task_wakeup == pdTRUE;
@@ -169,14 +135,41 @@ static bool example_rmt_rx_done_callback(rmt_channel_handle_t channel,
 
 namespace hakkou {
 
+enum IR_CMD : u16 {
+  B_ONOFF = 0xfe01,
+  B_ESC = 0xec13,
+
+  // B_1 = 0x4E,
+  // B_2 = 0x4A,
+  // B_3 = 0x46,
+  // B_4 = 0x4D,
+  // B_5 = 0x49,
+  // B_6 = 0x45,
+  // B_7 = 0x4C,
+  // B_8 = 0x48,
+  // B_9 = 0x44,
+  // B_0 = 0x8,
+  // B_REC = 0x5E,
+  // B_TV = 0xC,
+  // B_ARROW_UP = 0x6,
+  // B_ARROW_DOWN = 0x1F,
+  B_OK = 0xf00f,
+  B_UP = 0xf807,
+  B_DOWN = 0xf40b,
+  B_LEFT = 0xf10e,
+  B_RIGHT = 0xf50a,
+  // B_REFRESH = 0x5C,
+  // B_BLUE0 = 0x5D,
+  // B_SILENCE = 0x10,
+  // B_PLUS = 0x52,
+  // B_MINUS = 0x53,
+  // B_bluearrowup = 0x50,
+  // B_bluearrowdown = 0x51,
+};
+
 class NECRemote {
  public:
-  // constexpr static rmt_channel_t RX_CHANNEL =
-  //     rmt_channel_t(CONFIG_IR_RMT_CHANNEL);
-  constexpr static gpio_num_t RX_PIN = static_cast<gpio_num_t>(CONFIG_IR_PIN);
-
-  NECRemote(uint32_t address, bool skip_repeats)
-      : address_(address), skip_repeats_(skip_repeats) {
+  NECRemote(uint32_t address) : address_(address) {
     xTaskCreate(initialize, "NEC_IR", 4196, this, 10, nullptr);
   }
 
@@ -201,7 +194,7 @@ class NECRemote {
         xQueueCreate(1, sizeof(rmt_rx_done_event_data_t));
     assert(receive_queue);
     rmt_rx_event_callbacks_t cbs = {
-        .on_recv_done = example_rmt_rx_done_callback,
+        .on_recv_done = rx_callback,
     };
     ESP_ERROR_CHECK(
         rmt_rx_register_event_callbacks(rx_channel, &cbs, receive_queue));
@@ -239,7 +232,7 @@ class NECRemote {
       if (xQueueReceive(receive_queue, &rx_data, pdMS_TO_TICKS(1000)) ==
           pdPASS) {
         // parse the receive symbols and print the result
-        example_parse_nec_frame(rx_data.received_symbols, rx_data.num_symbols);
+        parse_and_emit_nec_frame(rx_data.received_symbols, rx_data.num_symbols);
         // start receive again
         ESP_ERROR_CHECK(rmt_receive(rx_channel, raw_symbols,
                                     sizeof(raw_symbols), &receive_config));
@@ -249,8 +242,56 @@ class NECRemote {
     vTaskDelete(NULL);
   }
 
-  uint32_t address_;
-  bool skip_repeats_;
+  /**
+   * @brief Decode RMT symbols into NEC scan code and print the result
+   */
+  void parse_and_emit_nec_frame(rmt_symbol_word_t* rmt_nec_symbols,
+                                size_t symbol_num) {
+    hakkou::HTRACE("NEC frame start---\r");
+    for (size_t i = 0; i < symbol_num; i++) {
+      hakkou::HTRACE("{%d:%d},{%d:%d}\r", rmt_nec_symbols[i].level0,
+                     rmt_nec_symbols[i].duration0, rmt_nec_symbols[i].level1,
+                     rmt_nec_symbols[i].duration1);
+    }
+    hakkou::HTRACE("---NEC frame end: ");
+    // decode RMT symbols
+    switch (symbol_num) {
+      case 34:  // NEC normal frame
+      {
+        std::optional<NECScanCode> code = nec_parse_frame(rmt_nec_symbols);
+        if (code) {
+          last_code = code.value();
+          hakkou::HDEBUG("Address=%04X, Command=%04X\r\n\r", last_code.address,
+                         last_code.command);
+          if (last_code.address == address_) {
+            event_post(
+                Event{.event_type = EventType::IRCode, .scan_code = last_code});
+          }
+        }
+
+      } break;
+      case 2:  // NEC repeat frame
+      {
+        if (nec_parse_frame_repeat(rmt_nec_symbols)) {
+          last_code.is_repeated = true;
+          hakkou::HDEBUG("Address=%04X, Command=%04X, repeat\r\n\r",
+                         last_code.address, last_code.command);
+          if (last_code.address == address_) {
+            event_post(
+                Event{.event_type = EventType::IRCode, .scan_code = last_code});
+          }
+        }
+      } break;
+      default:
+        hakkou::HDEBUG("Unknown NEC frame\r\n\r");
+        break;
+    }
+  }
+
+ private:
+  u16 address_;
+
+  NECScanCode last_code;
 };
 
 }  // namespace hakkou
