@@ -110,6 +110,8 @@ extern "C" void app_main(void) {
 
   auto ctrl = new Controller();
 
+  // wait for sensors to initialzie...
+  platform_sleep(1000);
   ctrl->run();
 
   event_post(Event{

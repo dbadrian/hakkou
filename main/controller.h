@@ -35,12 +35,12 @@ class Controller {
  public:
   // PID settings
   // TODO: make configurable
-  constexpr static float Kp = 1000.0f;
-  constexpr static float Ki = 500.0f;
-  constexpr static float Kd = 5.0f;
+  constexpr static float Kp = 800.0f;  // 0.1C -> 100%
+  constexpr static float Ki = 1.5f;
+  constexpr static float Kd = 0.0f;
   constexpr static float tau = 0.0f;
-  constexpr static float integrator_min = -1000.0f;
-  constexpr static float integrator_max = 1000.0f;
+  constexpr static float integrator_min = -30.0f;
+  constexpr static float integrator_max = 30.0f;
   constexpr static float out_min = 0;
   constexpr static float out_max = 100.0f;
 
@@ -54,12 +54,20 @@ class Controller {
   constexpr static u8 GUI_QUEUE_ITEM_SIZE = sizeof(Event::gui_event);
 
   // Default values
-  constexpr static float DEFAULT_TEMP_SETPOINT = 25;
+  constexpr static float DEFAULT_TEMP_SETPOINT = 21;
   constexpr static float DEFAULT_HMD_SETPOINT = 50;
 
   Controller()
-      : temperature_pid_(PIDConfig{Kp, Ki, Kd, tau, out_min, out_max,
-                                   integrator_min, integrator_max}) {
+      : temperature_pid_(PIDConfig{
+            .Kp = Kp,
+            .Ki = Ki,
+            .Kd = Kd,
+            .tau = tau,
+            .out_min = out_min,
+            .out_max = out_max,
+            .i_limit_min = integrator_min,
+            .i_limit_max = integrator_max,
+        }) {
     gui_event_queue_ =
         xQueueCreateStatic(GUI_QUEUE_LENGTH, GUI_QUEUE_ITEM_SIZE,
                            gui_queue_storage, &gui_queue_internal_);
@@ -154,7 +162,7 @@ class Controller {
     float temp_measured{};
     // float hmd_measured{};
 
-    u32 temp_pid_duty{};
+    u32 temp_pid_duty = 0;
 
     GUIEvent gui_event;
     active_screen_ = &progress_screen_;
@@ -175,7 +183,7 @@ class Controller {
 
       // 2. get current time and update passed time
       time_passed_m = (get_time_sec() - start_time_s) / 60;
-      HTRACE("time_passed_m=%lu", time_passed_m);
+      HDEBUG("time_passed_m=%lu", time_passed_m);
 
       // 4. Update temperature PID and emit control signals
       // Update the temperature setpoint but querying the
@@ -183,7 +191,7 @@ class Controller {
       // and then publishing it
       temp_measured = get_adjusted_temperature(temp_setpoint_);
       temp_pid_duty = temperature_pid_.update(temp_setpoint_, temp_measured);
-      HTRACE("TEMP_PID: setpoint='%f' measured='%f' duty='%lu'", temp_setpoint_,
+      HDEBUG("TEMP_PID: setpoint='%f' measured='%f' duty='%lu'", temp_setpoint_,
              temp_measured, temp_pid_duty);
       event_post({.event_type = EventType::FanDuty, .fan_duty = 100});
       event_post(

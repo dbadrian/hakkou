@@ -63,7 +63,7 @@ class PID {
   float differentiator_{0.0};
   float prev_err_{0.0};
   float prev_measurement{0.0};
-  u32 last_time{0};
+  float last_time{0};
   float out_{0.0};
 };
 

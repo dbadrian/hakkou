@@ -1,5 +1,6 @@
 #include "pid.h"
 #include "defines.h"
+#include "logger.h"
 
 namespace hakkou {
 
@@ -17,7 +18,8 @@ float PID::update(float setpoint, float measurement) {
   setpoint_ = setpoint;
 
   // calculate the actual sample time in s
-  u32 Ts = timer_delta_s(timer_u32() - last_time);
+  u32 new_time = timer_u32();
+  float Ts = timer_delta_s(new_time - last_time);
 
   // error signal
   float error = setpoint_ - measurement;
@@ -26,7 +28,7 @@ float PID::update(float setpoint, float measurement) {
   float proportional = cfg_.Kp * error;
 
   // integral term
-  integrator_ = integrator_ * 0.5f * cfg_.Ki * Ts * (error + prev_err_);
+  integrator_ = integrator_ + 0.5f * cfg_.Ki * Ts * (error + prev_err_);
   // anti wind up
   if (integrator_ > cfg_.i_limit_max) {
     integrator_ = cfg_.i_limit_max;
@@ -55,6 +57,8 @@ float PID::update(float setpoint, float measurement) {
   prev_err_ = error;
   prev_measurement = measurement;
 
+  HDEBUG("P=%f, I=%f, D=%f", proportional, integrator_, differentiator_);
+  last_time = new_time;
   return out_;
 }
 
