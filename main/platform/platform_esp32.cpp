@@ -27,6 +27,7 @@
 #include "i2cdev.h"
 #include "nvs_flash.h"
 
+#include <sys/time.h>
 #include <cstdio>
 
 // as defined in esp-idf (skipping includes)
@@ -82,29 +83,40 @@ void platform_sleep(u64 ms) {
   vTaskDelay(pdMS_TO_TICKS(ms));
 }
 
-class HMutex {
- public:
-  HMutex() {
-    xSemaphore_ = xSemaphoreCreateMutexStatic(&xMutexBuffer_);
-    /* The pxMutexBuffer was not NULL, so it is expected that the
-    handle will not be NULL. */
-    configASSERT(xSemaphore_);
+HMutex::HMutex() {
+  xSemaphore_ = xSemaphoreCreateMutexStatic(&xMutexBuffer_);
+  /* The pxMutexBuffer was not NULL, so it is expected that the
+  handle will not be NULL. */
+  configASSERT(xSemaphore_);
+}
+
+void HMutex::lock() {
+  // wait indefinitely
+  xSemaphoreTake(xSemaphore_, portMAX_DELAY);
+}
+
+bool HMutex::lock(u64 ms_to_wait) {
+  // Blocks until a lock can be acquired or xTicksToWait passed for the
+  // current execution agent (thread, process, task). If an exception is
+  // thrown, no lock is acquired.
+
+  /* See if we can obtain the semaphore.  If the semaphore is not
+  available wait 10 ticks to see if it becomes free. */
+  return xSemaphoreTake(xSemaphore_, pdMS_TO_TICKS(ms_to_wait)) == pdTRUE;
+}
+
+bool HMutex::try_lock() {
+  return lock(0);
+}
+
+void HMutex::unlock() {
+  if (xSemaphore_ != nullptr) {
+    if (xSemaphoreGive(xSemaphore_) != pdTRUE) {
+      // We would expect this call to fail because we cannot give
+      // a semaphore without first "taking" it!
+    }
   }
-
-  // Blocks until a lock can be acquired for the current execution agent
-  // (thread, process, task). If an exception is thrown, no lock is acquired.
-  void lock();
-
-  [[nodiscard]] bool lock(TickType_t xTicksToWait);
-
-  [[nodiscard]] bool try_lock();
-
-  void unlock();
-
- private:
-  SemaphoreHandle_t xSemaphore_{nullptr};
-  StaticSemaphore_t xMutexBuffer_;
-};
+}
 
 // allocation functions for freerots are also mapped to heap_caps_malloc
 // so no need to us the freertos functions
@@ -418,6 +430,12 @@ bool platform_add_shutdown_handler(ShutdownHandler handler) {
 void platform_on_shutdown(void) {
   // TODO: Log more? FIlesystem shutdown? dunnno
   HWARN("System shutdown occured....");
+}
+
+u32 get_time_sec() {
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return tv.tv_sec;
 }
 
 }  // namespace hakkou

@@ -6,6 +6,7 @@
 #include "platform/platform.h"
 
 ///////TODO: Temp includes
+#include "controller.h"
 #include "hardware/bme280.h"
 #include "hardware/fan.h"
 #include "hardware/h_ds18x20.h"
@@ -65,6 +66,10 @@ extern "C" void app_main(void) {
   TaskHandle_t xHandle = NULL;
   xTaskCreate(task_manager, "TaskManager", 2048, nullptr, 20, &xHandle);
 
+  auto heater = new Heater(CONFIG_HEATER_PWM_PIN);
+
+  auto ctrl = new Controller();
+
   platform_sleep(3000);
   HINFO("POSTING CLD EVENT");
 
@@ -77,6 +82,8 @@ extern "C" void app_main(void) {
                        {"   asdsd            "},
                        {"                    "}}},
   });
+
+  ctrl->run(xTaskGetCurrentTaskHandle());
 
   // Now start the main FSM
   vTaskSuspend(NULL);

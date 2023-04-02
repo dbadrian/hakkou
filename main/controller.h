@@ -71,6 +71,8 @@ class Controller {
     if (!food_handle) {
       HFATAL("Couldn't register controller event callback!");
     }
+
+    HINFO("Initialized controller.");
   }
 
   void run(TaskHandle_t task_handle) {
@@ -95,11 +97,14 @@ class Controller {
         return instance->ambient_hmd_cb(event);
       } break;
       default:
-        break;
+        return CallbackResponse::Continue;
     }
   }
 
  private:
+  // Will unregister handles etc.
+  void clean_up();
+
   CallbackResponse system_event_cb(const Event event) {
     // TODO: ????
     // Mostly responding to system errors
@@ -107,26 +112,13 @@ class Controller {
     // e.g., if food sensors are detached?
     return CallbackResponse::Continue;
   }
-  CallbackResponse food_temp_event_cb(const Event event) {
-    const std::scoped_lock lock(sensor_states_.mtx);
-    sensor_states_.amb_temperature = event.temperature;
-    return CallbackResponse::Continue;
-  }
-  CallbackResponse ambient_temp_event_cb(const Event event) {
-    const std::scoped_lock lock(sensor_states_.mtx);
-    sensor_states_.amb_temperature = event.temperature;
-    return CallbackResponse::Continue;
-  }
-  CallbackResponse ambient_hmd_cb(const Event event) {
-    const std::scoped_lock lock(sensor_states_.mtx);
-    sensor_states_.amb_humidity = event.humidity;
-    return CallbackResponse::Continue;
-  }
 
-  void clean_up();
+  CallbackResponse food_temp_event_cb(const Event event);
+  CallbackResponse ambient_temp_event_cb(const Event event);
+  CallbackResponse ambient_hmd_cb(const Event event);
 
   void run_manual() {
-    // const uint32_t start_time_s = get_time_sec();
+    const uint32_t start_time_s = get_time_sec();
     uint32_t time_passed_m = 0;
     bool running = true;
 
@@ -136,6 +128,42 @@ class Controller {
     uint32_t temp_pid_duty{};
 
     while (running) {
+      // TODO 1. check if errors occurred?
+
+      // 2. get current time and update passed time
+      time_passed_m = (get_time_sec() - start_time_s) / 60;
+      HDEBUG("time_passed_m=%lu", time_passed_m);
+
+      // 4. Update temperature PID and emit control signals
+      // Update the temperature setpoint but querying the
+      // latest (adjusted) temperature, putting it to the PID
+      // and then publishing it
+      temp_measured = get_adjusted_temperature(temp_setpoint_);
+      temp_pid_duty = temperature_pid_.update(temp_setpoint_, temp_measured);
+      HDEBUG("TEMP_PID: setpoint='%f' measured='%f' duty='%lu'", temp_setpoint_,
+             temp_measured, temp_pid_duty);
+      event_post({.event_type = EventType::FanDuty, .fan_duty = 100});
+      event_post(
+          {.event_type = EventType::HeaterDuty, .heater_duty = temp_pid_duty});
+
+      // TODO: 5. Humidity: Not implemented!
+
+      // TODO: Update the lcd
+      // Update and show whatever screen is currently showing
+      // {
+      //   const std::scoped_lock lock(gui_state_.mtx);
+      //   lcd_.update(screen_->data());
+      // }
+
+      // Check if we received notification to die
+      // auto notification = ulTaskNotifyTake(pdTRUE, 10_ms2t);
+      // if (notification == EVENTS_T::PROCESS_DIE) {
+      //   ESP_LOGI(CTRL_TAG, "Received kill notifcation %lu", notification);
+      //   break;
+      // }
+
+      // TODO: Make this into a setting
+      platform_sleep(250);
     }
   }
 
@@ -156,7 +184,7 @@ class Controller {
 
   // PID to manage the heater
   PID temperature_pid_;
-  float temp_setpoint_{30};
+  float temp_setpoint_{22};
   float hmd_setpoint_{50};
 
   // single mtx for measurements is enough

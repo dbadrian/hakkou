@@ -1,17 +1,17 @@
 idf_component_register(
     SRCS
         "main.cpp"
+        "platform/platform_esp32.cpp"
         "logger.cpp"
         "event.cpp"
         "preferences.cpp"
-        # "controller.cpp"
+        "controller.cpp"
         "hardware/fan.cpp"
         "hardware/lcd.cpp"
         "hardware/bme280.cpp"
         "hardware/h_ds18x20.cpp"
         "hardware/pid.cpp"
         "hardware/heater.cpp"
-        "platform/platform_esp32.cpp"
     INCLUDE_DIRS "."
 )
 

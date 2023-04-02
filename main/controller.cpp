@@ -22,4 +22,22 @@ void Controller::clean_up() {
   }
 }
 
+CallbackResponse Controller::food_temp_event_cb(const Event event) {
+  const std::scoped_lock lock(sensor_states_.mtx);
+  sensor_states_.food_temperature = event.temperature;
+  return CallbackResponse::Continue;
+}
+
+CallbackResponse Controller::ambient_temp_event_cb(const Event event) {
+  const std::scoped_lock lock(sensor_states_.mtx);
+  sensor_states_.amb_temperature = event.temperature;
+  return CallbackResponse::Continue;
+}
+
+CallbackResponse Controller::ambient_hmd_cb(const Event event) {
+  const std::scoped_lock lock(sensor_states_.mtx);
+  sensor_states_.amb_humidity = event.humidity;
+  return CallbackResponse::Continue;
+}
+
 }  // namespace hakkou

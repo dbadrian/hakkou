@@ -16,7 +16,7 @@ static bool is_initialized = false;
 static EventSystemState state;
 
 // Task/Stack buffer
-constexpr static uint32_t STACK_SIZE = 2048;
+constexpr static uint32_t STACK_SIZE = 4196;
 constexpr static UBaseType_t PRIORITY = 9;  // TODO: set somewhere else
 StackType_t task_stack[STACK_SIZE];
 StaticTask_t task_buffer;

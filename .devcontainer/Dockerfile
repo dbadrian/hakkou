@@ -1,4 +1,4 @@
-FROM espressif/idf:v5.0
+FROM espressif/idf:latest
 RUN echo "source /opt/esp/idf/export.sh" >> /root/.bashrc
 
 RUN apt-get update \
