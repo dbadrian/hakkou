@@ -3,12 +3,14 @@
 #include "defines.h"
 #include "event.h"
 #include "logger.h"
+#include "platform/platform.h"
 
 // TODO: ESP-IDF specific?
 #include <hd44780.h>
 #include <pcf8574.h>
 
 #include <cstring>
+#include <mutex>
 #include <string_view>
 
 namespace hakkou {
@@ -57,12 +59,14 @@ class LCD {
       notification = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
       if (notification == 1) {
         HDEBUG("Updating LCD");
+        std::scoped_lock lock(mtx_);
         // got notified to update LCD
         for (std::size_t i = 0; i < Rows; i++) {
           if (dirty_[i]) {
             hd44780_gotoxy(&lcd_, 0, i);
             hd44780_puts(&lcd_, buf[i]);
           }
+          dirty_[i] = false;
         }
       }
     }
@@ -77,7 +81,7 @@ class LCD {
   StackType_t task_buf_[STACK_SIZE];
   StaticTask_t xTaskBuffer;
   TaskHandle_t task_handle_;
-
+  HMutex mtx_;
   std::optional<EventHandle> cb_handle_;
 };
 

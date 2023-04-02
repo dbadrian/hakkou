@@ -28,6 +28,7 @@ using namespace hakkou;
 static CallbackResponse map_ircode_to_gui_cmd(Event event, void* listener) {
   if (!event.scan_code.is_repeated) {
     switch (event.scan_code.command) {
+      HINFO("GOT AN EVENT!");
       case IR_CMD::B_UP:
         event_post(
             {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_UP});
@@ -87,45 +88,37 @@ extern "C" void app_main(void) {
     vTaskSuspend(NULL);  // TODO: Should probably restart into error mode
   }
 
+  auto remote = new NECRemote(CONFIG_IR_ADDR);
+  event_register(EventType::IRCode, nullptr, map_ircode_to_gui_cmd);
+
   Fan4W* fan = new Fan4W(CONFIG_FAN_PWM_PIN, CONFIG_FAN_TACHO_PIN);
-  //   event_post(
-  //       {.event_type = EventType::FanDuty, .sender = nullptr, .fan_duty =
-  //       0});
+  event_post(
+      {.event_type = EventType::FanDuty, .sender = nullptr, .fan_duty = 0});
 
-  //   LCD* lcd = new LCD();
-  //   BME280* bme = new
-  //   BME280(static_cast<i2c_port_t>(CONFIG_BMP280_I2C_ADDRESS),
-  //                            static_cast<gpio_num_t>(CONFIG_I2C_SDA_PIN),
-  //                            static_cast<gpio_num_t>(CONFIG_I2C_SCL_PIN),
-  //                            2000);
+  LCD* lcd = new LCD();
+  BME280* bme = new BME280(static_cast<i2c_port_t>(CONFIG_BMP280_I2C_ADDRESS),
+                           static_cast<gpio_num_t>(CONFIG_I2C_SDA_PIN),
+                           static_cast<gpio_num_t>(CONFIG_I2C_SCL_PIN), 2000);
 
-  //   DS18X20* ds18x20 =
-  //       new DS18X20(static_cast<gpio_num_t>(CONFIG_ONEWIRE_PIN), 2000);
+  DS18X20* ds18x20 =
+      new DS18X20(static_cast<gpio_num_t>(CONFIG_ONEWIRE_PIN), 2000);
 
   TaskHandle_t xHandle = NULL;
   xTaskCreate(task_manager, "TaskManager", 2048, nullptr, 20, &xHandle);
 
-  //   auto heater = new Heater(CONFIG_HEATER_PWM_PIN);
+  auto heater = new Heater(CONFIG_HEATER_PWM_PIN);
 
-  //   auto ctrl = new Controller();
+  auto ctrl = new Controller();
 
-  //   platform_sleep(3000);
-  //   HINFO("POSTING CLD EVENT");
+  ctrl->run();
 
-  //   platform_sleep(3000);
-  //   HINFO("POSTING CLD EVENT");
-  //   event_post(Event{
-  //       .event_type = EventType::ScreenUpdate,
-  //       .screen_data = {{{"                    "},
-  //                        {"      > CONT. <     "},
-  //                        {"   asdsd            "},
-  //                        {"                    "}}},
-  //   });
-
-  //   ctrl->run(xTaskGetCurrentTaskHandle());
-
-  auto remote = new NECRemote(CONFIG_IR_ADDR);
-  event_register(EventType::IRCode, nullptr, map_ircode_to_gui_cmd);
+  event_post(Event{
+      .event_type = EventType::ScreenUpdate,
+      .screen_data = {{{"                    "},
+                       {"       MANUAL       "},
+                       {"      SHUTDOWN      "},
+                       {"                    "}}},
+  });
 
   // Now start the main FSM
   vTaskSuspend(NULL);

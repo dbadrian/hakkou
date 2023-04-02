@@ -43,6 +43,7 @@ void LCD::update(const ScreenData& data) {
 
   // iterate over each line in buf and check if something changed
   // by byte-wise comparison
+  std::scoped_lock lock(mtx_);
   for (std::size_t i = 0; i < Rows; i++) {
     dirty_[i] = memcmp(buf[i], data[i].data(), Cols + 1) != 0;
     if (dirty_[i]) {

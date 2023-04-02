@@ -29,4 +29,6 @@ enum GUIEvent : u16 {
   GUI_RIGHT,
 };
 
+using TimeString = std::array<char, 8>;
+
 }  // namespace hakkou
