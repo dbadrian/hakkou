@@ -28,7 +28,6 @@ using namespace hakkou;
 static CallbackResponse map_ircode_to_gui_cmd(Event event, void* listener) {
   if (!event.scan_code.is_repeated) {
     switch (event.scan_code.command) {
-      HINFO("GOT AN EVENT!");
       case IR_CMD::B_UP:
         event_post(
             {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_UP});
@@ -89,7 +88,9 @@ extern "C" void app_main(void) {
   }
 
   auto remote = new NECRemote(CONFIG_IR_ADDR);
-  event_register(EventType::IRCode, nullptr, map_ircode_to_gui_cmd);
+  if (!event_register(EventType::IRCode, nullptr, map_ircode_to_gui_cmd)) {
+    HERROR("Couldn't initialize the IR remote!");
+  }
 
   Fan4W* fan = new Fan4W(CONFIG_FAN_PWM_PIN, CONFIG_FAN_TACHO_PIN);
   event_post(

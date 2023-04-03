@@ -47,7 +47,7 @@ class Controller {
   // Task related
   constexpr static uint32_t STACK_SIZE = 2 * 2048;
   constexpr static UBaseType_t PRIORITY = 15;
-  constexpr static u64 SLEEP_MS = 50;
+  constexpr static u64 UPDATE_RATE_MS = 100;
 
   // GUI Queue
   constexpr static u8 GUI_QUEUE_LENGTH = 5;
@@ -172,15 +172,14 @@ class Controller {
     u32 time_passed_m = 0;
     bool running = true;
 
-    // float temp_ctrl{};
-    // bool food_is_control = true;
-    // float hmd_measured{};
-
     u32 temp_pid_duty = 0;
 
     GUIEvent gui_event;
     active_screen_ = &progress_screen_;
+
+    u32 time_;
     while (running) {
+      time_ = timer_u32();
       // TODO 1. check if errors occurred?
 
       // Process any available GUI event (no wait)
@@ -195,11 +194,11 @@ class Controller {
         }
       }
 
-      // 2. get current time and update passed time
+      // Get current time and update passed time
       time_passed_m = (get_time_sec() - start_time_s) / 60;
       HDEBUG("time_passed_m=%lu", time_passed_m);
 
-      // 4. Update temperature PID and emit control signals
+      // Update temperature PID and emit control signals
       // Update the temperature setpoint but querying the
       // latest (adjusted) temperature, putting it to the PID
       // and then publishing it
@@ -212,7 +211,7 @@ class Controller {
       event_post(
           {.event_type = EventType::HeaterDuty, .heater_duty = temp_pid_duty});
 
-      // TODO: 5. Humidity: Not implemented!
+      // TODO: Humidity: Not implemented!
 
       progress_screen_.update(
           sensor_states_.amb_temperature,  /* float amb_temp*/
@@ -223,7 +222,6 @@ class Controller {
           food_is_control, gui_state_.selected_temp,
           time_passed_m * 60, /* uint32_t time_passed*/
           std::nullopt
-
           // program::total_run_time(prgm) * 60 /* uint32_t total_time*/
       );
 
@@ -241,8 +239,13 @@ class Controller {
         break;
       }
 
-      // TODO: measure passed time and sleep accordingly for fixed freq
-      platform_sleep(SLEEP_MS);
+      // ensure u32 for wrap-around
+      float time_iteration = timer_delta_ms(timer_u32() - time_);
+      if (time_iteration < UPDATE_RATE_MS) {
+        HDEBUG("[Controller] will sleep for %f %u ms", time_iteration,
+               static_cast<u32>(UPDATE_RATE_MS - time_iteration));
+        platform_sleep(static_cast<u32>(UPDATE_RATE_MS - time_iteration));
+      }
     }
   }
 
