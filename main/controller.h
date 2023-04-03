@@ -68,6 +68,8 @@ class Controller {
             .i_limit_min = integrator_min,
             .i_limit_max = integrator_max,
         }) {
+    is_initialized_ = true;
+
     gui_event_queue_ =
         xQueueCreateStatic(GUI_QUEUE_LENGTH, GUI_QUEUE_ITEM_SIZE,
                            gui_queue_storage, &gui_queue_internal_);
@@ -79,39 +81,50 @@ class Controller {
                                    Controller::event_callback);
     if (!system_handle) {
       HFATAL("Couldn't register controller event callback!");
+      is_initialized_ = false;
     }
     hmd_handle =
         event_register(EventType::HumidityAmbient, static_cast<void*>(this),
                        Controller::event_callback);
     if (!hmd_handle) {
       HFATAL("Couldn't register controller event callback!");
+      is_initialized_ = false;
     }
     amb_handle =
         event_register(EventType::TemperatureAmbient, static_cast<void*>(this),
                        Controller::event_callback);
     if (!amb_handle) {
       HFATAL("Couldn't register controller event callback!");
+      is_initialized_ = false;
     }
     food_handle =
         event_register(EventType::TemperatureFood, static_cast<void*>(this),
                        Controller::event_callback);
     if (!food_handle) {
       HFATAL("Couldn't register controller event callback!");
+      is_initialized_ = false;
     }
 
     gui_handle = event_register(EventType::GUI, static_cast<void*>(this),
                                 Controller::event_callback);
     if (!gui_handle) {
       HFATAL("Couldn't register controller event callback!");
+      is_initialized_ = false;
     }
 
-    HINFO("Initialized controller.");
+    if (is_initialized_) {
+      HINFO("Initialized controller.");
+    } else {
+      HERROR("Failed initializing controller.");
+    }
   }
 
   void run() {
-    task_handle_ = xTaskGetCurrentTaskHandle();
-    run_manual();  // TODO: read the program mode
-    clean_up();
+    if (is_initialized_) {
+      task_handle_ = xTaskGetCurrentTaskHandle();
+      run_manual();  // TODO: read the program mode
+      clean_up();
+    }
   }
 
   static CallbackResponse event_callback(Event event, void* listener) {
@@ -159,7 +172,8 @@ class Controller {
     u32 time_passed_m = 0;
     bool running = true;
 
-    float temp_measured{};
+    // float temp_ctrl{};
+    // bool food_is_control = true;
     // float hmd_measured{};
 
     u32 temp_pid_duty = 0;
@@ -189,10 +203,11 @@ class Controller {
       // Update the temperature setpoint but querying the
       // latest (adjusted) temperature, putting it to the PID
       // and then publishing it
-      temp_measured = get_adjusted_temperature(temp_setpoint_);
-      temp_pid_duty = temperature_pid_.update(temp_setpoint_, temp_measured);
+      auto [temp_ctrl, food_is_control] =
+          get_control_temperature(temp_setpoint_);
+      temp_pid_duty = temperature_pid_.update(temp_setpoint_, temp_ctrl);
       HDEBUG("TEMP_PID: setpoint='%f' measured='%f' duty='%lu'", temp_setpoint_,
-             temp_measured, temp_pid_duty);
+             temp_ctrl, temp_pid_duty);
       event_post({.event_type = EventType::FanDuty, .fan_duty = 100});
       event_post(
           {.event_type = EventType::HeaterDuty, .heater_duty = temp_pid_duty});
@@ -205,11 +220,11 @@ class Controller {
           temp_setpoint_,                  /* float temp_setpoint*/
           hmd_setpoint_,                   /* float hmd_setpoint*/
           sensor_states_.food_temperature, /* float food_temp*/
-          gui_state_.selected_temp,
+          food_is_control, gui_state_.selected_temp,
           time_passed_m * 60, /* uint32_t time_passed*/
-          60 * 60
+          std::nullopt
+
           // program::total_run_time(prgm) * 60 /* uint32_t total_time*/
-          // std::nullopt
       );
 
       // Update and show whatever screen is currently showing
@@ -231,24 +246,22 @@ class Controller {
     }
   }
 
-  [[nodiscard]] float get_adjusted_temperature(float setpoint) {
-    // TODO: get rid of this or reintegrate the adjustment method
-    return sensor_states_.food_temperature;
+  [[nodiscard]] std::pair<float, bool> get_control_temperature(float setpoint) {
+    // If ambient temperature is HIGHER THAN food temperature, assume ambient as
+    // control signal. This will ensure we wont drastically overheat the
+    // container if the food mass is slow to heat up
+    if (sensor_states_.amb_temperature > sensor_states_.food_temperature) {
+      return {sensor_states_.amb_temperature, false};
+    } else {
+      return {sensor_states_.food_temperature, true};
+    }
   }
-
-  // void gui_event_cb(const Event event) {
-  //   auto event = std::get<EVENTS_T>(msg);
-
-  //   if (gui_state_.on_abort_screen) {
-  //     handle_abort_screen_events(event);
-  //   } else {
-  //     handle_main_screen_events(event);
-  //   }
-  // }
 
   void handle_abort_screen_events(GUIEvent event);
   void handle_main_screen_events(GUIEvent event);
 
+ private:
+  bool is_initialized_{false};
   // Task/Stack buffer
   StackType_t task_buf_[STACK_SIZE];
   StaticTask_t xTaskBuffer;

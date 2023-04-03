@@ -96,7 +96,7 @@ struct EventSystemState {
 [[nodiscard]] std::optional<EventHandle>
 event_register(EventType event_type, void* listener, OnEventCallback callback);
 
-bool event_unregister(EventHandle handle);
+bool event_unregister(const EventHandle& handle);
 
 bool event_post(Event event,
                 bool high_priority = false,

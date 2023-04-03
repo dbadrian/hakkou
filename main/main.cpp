@@ -93,7 +93,7 @@ extern "C" void app_main(void) {
 
   Fan4W* fan = new Fan4W(CONFIG_FAN_PWM_PIN, CONFIG_FAN_TACHO_PIN);
   event_post(
-      {.event_type = EventType::FanDuty, .sender = nullptr, .fan_duty = 0});
+      {.event_type = EventType::FanDuty, .sender = nullptr, .fan_duty = 30});
 
   LCD* lcd = new LCD();
   BME280* bme = new BME280(static_cast<i2c_port_t>(CONFIG_BMP280_I2C_ADDRESS),
@@ -106,12 +106,12 @@ extern "C" void app_main(void) {
   TaskHandle_t xHandle = NULL;
   xTaskCreate(task_manager, "TaskManager", 2048, nullptr, 20, &xHandle);
 
-  auto heater = new Heater(CONFIG_HEATER_PWM_PIN);
+  // auto heater = new Heater(CONFIG_HEATER_PWM_PIN);
 
   auto ctrl = new Controller();
 
   // wait for sensors to initialzie...
-  platform_sleep(1000);
+  platform_sleep(2000);
   ctrl->run();
 
   event_post(Event{

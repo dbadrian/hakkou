@@ -50,6 +50,7 @@ class ProgressScreen : public Screen {
               float temp_setpoint,
               float hmd_setpoint,
               std::optional<float> food_temp,
+              bool food_is_control,
               bool selected_temp,
               uint32_t time_passed,
               const std::optional<uint32_t>& total_time) {
@@ -64,9 +65,22 @@ class ProgressScreen : public Screen {
     }
     sprintf(screen_buf_[2].data(), "  aH: %4.1f%% [%4.1f]%c ", amb_hmd,
             hmd_setpoint, !selected_temp ? '<' : ' ');
-    sprintf(screen_buf_[3].data(), " %.7s / %.7s ",
-            time_to_string_representation(time_passed).data(),
-            time_to_string_representation(total_time.value()).data());
+    if (total_time) {
+      sprintf(screen_buf_[3].data(), " %.7s / %.7s ",
+              time_to_string_representation(time_passed).data(),
+              time_to_string_representation(total_time.value()).data());
+    } else {
+      sprintf(screen_buf_[3].data(), "       %.7s",
+              time_to_string_representation(time_passed).data());
+    }
+
+    if (food_is_control) {
+      screen_buf_[0].data()[0] = '*';
+      screen_buf_[1].data()[0] = ' ';
+    } else {
+      screen_buf_[0].data()[0] = ' ';
+      screen_buf_[1].data()[0] = '*';
+    }
 
     // if (time_passed && total_time) {
     //   sprintf(progress_screen_buf_[3], " %s / %s ",
