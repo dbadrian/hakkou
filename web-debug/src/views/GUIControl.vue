@@ -11,6 +11,7 @@ export default {
     window.addEventListener("keydown", e => {
       // console.log(e.key);
       switch (e.key) {
+        case 'Backspace': this.postGUICommand(-1); break;
         case 'Escape': this.postGUICommand(-1); break;
         case 'Enter': this.postGUICommand(0); break;
         case 'w': this.postGUICommand(1); break;

@@ -8,7 +8,7 @@ const router = createRouter({
     {
       path: "/",
       name: "home",
-      component: () => import("../views/ComicView.vue"),
+      component: () => import("../views/GUIControl.vue"),
     },
     // {
     //   path: "/comics",
