@@ -177,6 +177,7 @@ class Controller {
     GUIEvent gui_event;
     active_screen_ = &progress_screen_;
 
+
     u32 time_;
     while (running) {
       time_ = timer_u32();
@@ -196,17 +197,21 @@ class Controller {
 
       // Get current time and update passed time
       time_passed_m = (get_time_sec() - start_time_s) / 60;
-      HDEBUG("time_passed_m=%lu", time_passed_m);
+      // HDEBUG("time_passed_m=%lu", time_passed_m);
 
       // Update temperature PID and emit control signals
       // Update the temperature setpoint but querying the
       // latest (adjusted) temperature, putting it to the PID
       // and then publishing it
-      auto [temp_ctrl, food_is_control] =
+      state_mtx_.lock();
+       auto [temp_ctrl, food_is_control] =
           get_control_temperature(temp_setpoint_);
       temp_pid_duty = temperature_pid_.update(temp_setpoint_, temp_ctrl);
-      HDEBUG("TEMP_PID: setpoint='%f' measured='%f' duty='%lu'", temp_setpoint_,
-             temp_ctrl, temp_pid_duty);
+      state_mtx_.unlock();
+
+      // HDEBUG("TEMP_PID: setpoint='%f' measured='%f' duty='%lu'",
+      // temp_setpoint_,
+      //        temp_ctrl, temp_pid_duty);
       event_post({.event_type = EventType::FanDuty, .fan_duty = 100});
       event_post(
           {.event_type = EventType::HeaterDuty, .heater_duty = temp_pid_duty});
@@ -242,8 +247,8 @@ class Controller {
       // ensure u32 for wrap-around
       float time_iteration = timer_delta_ms(timer_u32() - time_);
       if (time_iteration < UPDATE_RATE_MS) {
-        HDEBUG("[Controller] will sleep for %f %u ms", time_iteration,
-               static_cast<u32>(UPDATE_RATE_MS - time_iteration));
+        // HDEBUG("[Controller] will sleep for %f %u ms", time_iteration,
+        //        static_cast<u32>(UPDATE_RATE_MS - time_iteration));
         platform_sleep(static_cast<u32>(UPDATE_RATE_MS - time_iteration));
       }
     }
@@ -277,6 +282,7 @@ class Controller {
   std::optional<EventHandle> gui_handle;
 
   // PID to manage the heater
+  HMutex state_mtx_;
   PID temperature_pid_;
   float temp_setpoint_{DEFAULT_TEMP_SETPOINT};
   float hmd_setpoint_{DEFAULT_HMD_SETPOINT};

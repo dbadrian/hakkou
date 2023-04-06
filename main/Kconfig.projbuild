@@ -85,47 +85,56 @@ menu "Hakkou Configuration"
         help
             The pin of the heater pwm gpio pin
 
-    # config ESP_WIFI_SSID
-    #     string "WiFi SSID"
-    #     default "myssid"
-    #     help
-    #         SSID (network name) for the example to connect to.
+    # WIFI RELATED
+    config WIFI_SSID
+        string "WiFi SSID"
+        default "myssid"
+        help
+            SSID (network name) for the example to connect to.
 
-    # config ESP_WIFI_PASSWORD
-    #     string "WiFi Password"
-    #     default "mypassword"
-    #     help
-    #         WiFi password (WPA or WPA2) for the example to use.
+    config WIFI_PASSWORD
+        string "WiFi Password"
+        default "mypassword"
+        help
+            WiFi password (WPA or WPA2) for the example to use.
 
-    # config ESP_MAXIMUM_RETRY
-    #     int "Maximum retry"
-    #     default 5
-    #     help
+    config WIFI_MAXIMUM_RETRY
+        int "Maximum retry"
+        default 5
+        help
     #         Set the Maximum retry to avoid station reconnecting to the AP unlimited when the AP is really inexistent.
 
-    # choice ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD
-    #     prompt "WiFi Scan auth mode threshold"
-    #     default ESP_WIFI_AUTH_OPEN
-    #     help
-    #         The weakest authmode to accept in the scan mode.
+choice WIFI_SCAN_AUTH_MODE_THRESHOLD
+    bool "Weakest allowed auth mode"
+    # prompt "WiFi Scan auth mode threshold"
+    default WIFI_AUTH_WPA2_PSK
+    help
+        The weakest authmode to accept in the scan mode.
+    config WIFI_AUTH_OPEN
+        bool "OPEN"
+    config WIFI_AUTH_WEP
+        bool "WEP"
+    config WIFI_AUTH_WPA_PSK
+        bool "WPA PSK"
+    config WIFI_AUTH_WPA2_PSK
+        bool "WPA2 PSK"
+    config WIFI_AUTH_WPA_WPA2_PSK
+        bool "WPA/WPA2 PSK"
+    config WIFI_AUTH_WPA3_PSK
+        bool "WPA3 PSK"
+    config WIFI_AUTH_WPA2_WPA3_PSK
+        bool "WPA2/WPA3 PSK"
+    config WIFI_AUTH_WAPI_PSK
+        bool "WAPI PSK"
+endchoice
 
-    #     config ESP_WIFI_AUTH_OPEN
-    #         bool "OPEN"
-    #     config ESP_WIFI_AUTH_WEP
-    #         bool "WEP"
-    #     config ESP_WIFI_AUTH_WPA_PSK
-    #         bool "WPA PSK"
-    #     config ESP_WIFI_AUTH_WPA2_PSK
-    #         bool "WPA2 PSK"
-    #     config ESP_WIFI_AUTH_WPA_WPA2_PSK
-    #         bool "WPA/WPA2 PSK"
-    #     config ESP_WIFI_AUTH_WPA3_PSK
-    #         bool "WPA3 PSK"
-    #     config ESP_WIFI_AUTH_WPA2_WPA3_PSK
-    #         bool "WPA2/WPA3 PSK"
-    #     config ESP_WIFI_AUTH_WAPI_PSK
-    #         bool "WAPI PSK"
-    # endchoice
+# rest/web server
+    config WEB_MOUNT_POINT
+        string "Website mount point in VFS"
+        default "/www"
+        help
+            Specify the mount point in VFS.
+
 
     # config MMQT_BROKER_URL
     #     string "MMQT_Broker URL"
@@ -158,11 +167,6 @@ menu "Hakkou Configuration"
     #     default 5
 
 
-    # config WEB_MOUNT_POINT
-    #     string "Website mount point in VFS"
-    #     default "/www"
-    #     help
-    #         Specify the mount point in VFS.
 
     # config MDNS_HOST_NAME
     #     string "mDNS Host Name"

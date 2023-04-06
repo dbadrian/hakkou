@@ -294,4 +294,40 @@ class NECRemote {
   NECScanCode last_code;
 };
 
+static CallbackResponse map_ircode_to_gui_cmd(Event event, void* listener) {
+  if (!event.scan_code.is_repeated) {
+    switch (event.scan_code.command) {
+      case IR_CMD::B_UP:
+        event_post(
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_UP});
+        break;
+      case IR_CMD::B_DOWN:
+        event_post(
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_DOWN});
+        break;
+      case IR_CMD::B_LEFT:
+        event_post(
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_LEFT});
+        break;
+      case IR_CMD::B_RIGHT:
+        event_post(
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_RIGHT});
+        break;
+      case IR_CMD::B_OK:
+        event_post(
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_OK});
+        break;
+      case IR_CMD::B_ESC:
+        [[fallthrough]];
+      case IR_CMD::B_ONOFF:
+        event_post(
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_ESC});
+        break;
+      default:
+        break;
+    }
+  }
+  return CallbackResponse::Continue;
+}
+
 }  // namespace hakkou

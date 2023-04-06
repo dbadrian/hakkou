@@ -32,11 +32,14 @@ void task_manager(void*) {
 
   while (true) {
     num_tasks = uxTaskGetNumberOfTasks();
+    HDEBUG("[TSKMGR]: Found %d tasks.", num_tasks);
     tasks.resize(num_tasks);
     num_tasks = uxTaskGetSystemState(tasks.data(), num_tasks, &ulTotalRunTime);
 
     char* ptr = buf + 2 * line_length;
     if (num_tasks == 0) {
+      HDEBUG("[TSKMGR]: Found no tasks, probably a memory error.");
+
       // memroy error fuck out of here
       // todo handle better :D
       vTaskDelete(NULL);
@@ -44,9 +47,10 @@ void task_manager(void*) {
 
     /* For percentage calculations. */
     ulTotalRunTime /= 100UL;
+    HWARN("[TSKMGR]: %lu", ulTotalRunTime);
 
     if (ulTotalRunTime == 0) {
-      HWARN("Run time is 0");
+      HWARN("[TSKMGR]: Run time is 0, skipping task manager.");
       /* Avoid divide by zero errors. */
       platform_sleep(1000);
       continue;

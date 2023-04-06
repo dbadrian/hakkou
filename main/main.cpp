@@ -16,6 +16,9 @@
 #include "hardware/nec_remote.h"
 
 #include "task_manager.h"
+
+#include "services/rest.h"
+#include "services/wifi.h"
 //////////
 
 #include "esp_log.h"
@@ -25,42 +28,33 @@
 
 using namespace hakkou;
 
-static CallbackResponse map_ircode_to_gui_cmd(Event event, void* listener) {
-  if (!event.scan_code.is_repeated) {
-    switch (event.scan_code.command) {
-      case IR_CMD::B_UP:
-        event_post(
-            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_UP});
-        break;
-      case IR_CMD::B_DOWN:
-        event_post(
-            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_DOWN});
-        break;
-      case IR_CMD::B_LEFT:
-        event_post(
-            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_LEFT});
-        break;
-      case IR_CMD::B_RIGHT:
-        event_post(
-            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_RIGHT});
-        break;
-      case IR_CMD::B_OK:
-        event_post(
-            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_OK});
-        break;
-      case IR_CMD::B_ESC:
-        event_post(
-            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_ESC});
-        break;
-      case IR_CMD::B_ONOFF:
-        event_post(
-            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_ONOFF});
-        break;
-      default:
-        break;
-    }
+void setup_hardware() {
+  // temporary bring up routine
+  LCD* lcd = new LCD();
+
+  auto remote = new NECRemote(CONFIG_IR_ADDR);
+  if (!event_register(EventType::IRCode, nullptr, map_ircode_to_gui_cmd)) {
+    HERROR("Couldn't initialize the IR remote!");
   }
-  return CallbackResponse::Continue;
+
+  Fan4W* fan = new Fan4W(CONFIG_FAN_PWM_PIN, CONFIG_FAN_TACHO_PIN);
+  event_post(
+      {.event_type = EventType::FanDuty, .sender = nullptr, .fan_duty = 30});
+
+  BME280* bme = new BME280(static_cast<i2c_port_t>(CONFIG_BMP280_I2C_ADDRESS),
+                           static_cast<gpio_num_t>(CONFIG_I2C_SDA_PIN),
+                           static_cast<gpio_num_t>(CONFIG_I2C_SCL_PIN), 2000);
+
+  DS18X20* ds18x20 =
+      new DS18X20(static_cast<gpio_num_t>(CONFIG_ONEWIRE_PIN), 2000);
+
+  Heater* heater = new Heater(CONFIG_HEATER_PWM_PIN);
+}
+
+void setup_hardware_debug() {
+  LCD* lcd = new LCD();
+
+  // todo: create a fake food/amb temp setup
 }
 
 extern "C" void app_main(void) {
@@ -87,30 +81,15 @@ extern "C" void app_main(void) {
     vTaskSuspend(NULL);  // TODO: Should probably restart into error mode
   }
 
-  auto remote = new NECRemote(CONFIG_IR_ADDR);
-  if (!event_register(EventType::IRCode, nullptr, map_ircode_to_gui_cmd)) {
-    HERROR("Couldn't initialize the IR remote!");
-  }
-
-  Fan4W* fan = new Fan4W(CONFIG_FAN_PWM_PIN, CONFIG_FAN_TACHO_PIN);
-  event_post(
-      {.event_type = EventType::FanDuty, .sender = nullptr, .fan_duty = 30});
-
-  LCD* lcd = new LCD();
-  BME280* bme = new BME280(static_cast<i2c_port_t>(CONFIG_BMP280_I2C_ADDRESS),
-                           static_cast<gpio_num_t>(CONFIG_I2C_SDA_PIN),
-                           static_cast<gpio_num_t>(CONFIG_I2C_SCL_PIN), 2000);
-
-  DS18X20* ds18x20 =
-      new DS18X20(static_cast<gpio_num_t>(CONFIG_ONEWIRE_PIN), 2000);
+  // bring up wifi
+  wifi_initialize();
+  rest_initialize();
+  setup_hardware_debug();
 
   TaskHandle_t xHandle = NULL;
   xTaskCreate(task_manager, "TaskManager", 2048, nullptr, 20, &xHandle);
 
-  // auto heater = new Heater(CONFIG_HEATER_PWM_PIN);
-
   auto ctrl = new Controller();
-
   // wait for sensors to initialzie...
   platform_sleep(2000);
   ctrl->run();

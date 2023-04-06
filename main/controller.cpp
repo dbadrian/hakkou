@@ -87,8 +87,6 @@ void Controller::handle_abort_screen_events(GUIEvent event) {
       abort_screen_.select(gui_state_.selected_cont);
       break;
     case GUIEvent::GUI_ESC:
-      [[fallthrough]];
-    case GUIEvent::GUI_ONOFF:
       leave_screen();
       break;
     default:
@@ -108,22 +106,29 @@ void Controller::handle_main_screen_events(GUIEvent event) {
       gui_state_.selected_temp = !gui_state_.selected_temp;
     } break;
     case GUIEvent::GUI_LEFT: {
-      if (gui_state_.selected_temp) {
-        temp_setpoint_ = temp_setpoint_ - 0.5 > 0 ? temp_setpoint_ - 0.5 : 0;
-      } else {
-        hmd_setpoint_ = hmd_setpoint_ - 0.5 > 0 ? hmd_setpoint_ - 0.5 : 0;
+      {
+        const std::scoped_lock lock(state_mtx_);
+
+        if (gui_state_.selected_temp) {
+          temp_setpoint_ = temp_setpoint_ - 0.5 > 0 ? temp_setpoint_ - 0.5 : 0;
+        } else {
+          hmd_setpoint_ = hmd_setpoint_ - 0.5 > 0 ? hmd_setpoint_ - 0.5 : 0;
+        }
       }
     } break;
     case GUIEvent::GUI_RIGHT: {
-      if (gui_state_.selected_temp) {
-        temp_setpoint_ += 0.5;
-      } else {
-        hmd_setpoint_ += 0.5;
+      {
+        const std::scoped_lock lock(state_mtx_);
+
+        if (gui_state_.selected_temp) {
+          temp_setpoint_ += 0.5;
+        } else {
+          hmd_setpoint_ += 0.5;
+        }
+        HFATAL("%f", temp_setpoint_);
       }
     } break;
-    case GUIEvent::GUI_ESC:
-      [[fallthrough]];
-    case GUIEvent::GUI_ONOFF: {
+    case GUIEvent::GUI_ESC: {
       // switch screens
       gui_state_.on_abort_screen = true;
       gui_state_.selected_temp = true;

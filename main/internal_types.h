@@ -20,7 +20,6 @@ struct NECScanCode {
 };
 
 enum GUIEvent : u16 {
-  GUI_ONOFF,
   GUI_ESC,
   GUI_OK,
   GUI_UP,

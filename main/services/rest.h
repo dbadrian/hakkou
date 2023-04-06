@@ -7,6 +7,8 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
+#include "event.h"
+
 #include "cJSON.h"
 
 #include "esp_chip_info.h"
@@ -120,7 +122,93 @@ static esp_err_t system_info_get_handler(httpd_req_t* req) {
   return ESP_OK;
 }
 
+char* parse_request_to_string(httpd_req_t* req) {
+  int total_len = req->content_len;
+  int cur_len = 0;
+  char* buf = ((rest_server_context_t*)(req->user_ctx))->scratch;
+  int received = 0;
+  if (total_len >= SCRATCH_BUFSIZE) {
+    /* Respond with 500 Internal Server Error */
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+                        "content too long");
+    return nullptr;
+  }
+  while (cur_len < total_len) {
+    received = httpd_req_recv(req, buf + cur_len, total_len);
+    if (received <= 0) {
+      /* Respond with 500 Internal Server Error */
+      httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+                          "Failed to post");  // TODO: message
+      return nullptr;
+    }
+    cur_len += received;
+  }
+  buf[total_len] = '\0';
 
+  return buf;
+}
+
+/* Simple handler for light brightness control */
+static esp_err_t gui_event_post_handler(httpd_req_t* req) {
+  /*
+    {
+      "gui_cmd": (1) "UP" or "DOWN", "OK", "LEFT", "RIGHT", "ESC"
+    }
+
+    ESC: -1
+    OK: 0
+    UP: 1
+    DOWN: 2
+    LEFT: 3
+    RIGHT: 4
+  */
+
+  char* buf = parse_request_to_string(req);
+  if (buf == nullptr) {
+    HERROR("Couldn't parse header to buffer");
+    return ESP_FAIL;
+  }
+  HDEBUG("%s", buf);
+
+  cJSON* root = cJSON_Parse(buf);
+  cJSON* guicmd = cJSON_GetObjectItemCaseSensitive(root, "gui_cmd");
+  if (cJSON_IsNumber(guicmd)) {
+    HINFO("GOT GUICMD %d", guicmd->valueint);
+    switch (guicmd->valueint) {
+      case -1: {
+        event_post(
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_ESC});
+      } break;
+      case 0: {
+        event_post(
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_OK});
+      } break;
+      case 1: {
+        event_post(
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_UP});
+      } break;
+      case 2: {
+        event_post(
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_DOWN});
+      } break;
+      case 3: {
+        event_post(
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_LEFT});
+      } break;
+      case 4: {
+        event_post(
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_RIGHT});
+      } break;
+
+      default: {
+        HDEBUG("[REST] Got an invalid gui command integer");
+      } break;
+    }
+  }
+  cJSON_Delete(root);
+  httpd_resp_sendstr(req, "Posted successfully");
+  return ESP_OK;
+}
 
 httpd_handle_t start_rest_server(const char* base_path) {
   if (!base_path) {
@@ -146,6 +234,13 @@ httpd_handle_t start_rest_server(const char* base_path) {
     free(rest_context);
     return nullptr;
   }
+
+  /* URI handler for light brightness control */
+  httpd_uri_t gui_cmd_handler = {.uri = "/api/v1/gui_cmd",
+                                 .method = HTTP_POST,
+                                 .handler = gui_event_post_handler,
+                                 .user_ctx = rest_context};
+  httpd_register_uri_handler(server, &gui_cmd_handler);
 
   /* URI handler for fetching system info */
   httpd_uri_t system_info_get_uri = {.uri = "/api/v1/system/info",
@@ -173,7 +268,8 @@ httpd_handle_t start_rest_server(const char* base_path) {
 //   mdns_txt_item_t serviceTxtData[] = {{"board", "esp32"}, {"path", "/"}};
 
 //   ESP_ERROR_CHECK(
-//       mdns_service_add("ESP32-WebServer", "_http", "_tcp", 80, serviceTxtData,
+//       mdns_service_add("ESP32-WebServer", "_http", "_tcp", 80,
+//       serviceTxtData,
 //                        sizeof(serviceTxtData) / sizeof(serviceTxtData[0])));
 // }
 
@@ -199,7 +295,7 @@ esp_err_t init_fs(void) {
   ret = esp_spiffs_info(NULL, &total, &used);
   if (ret != ESP_OK) {
     HERROR("Failed to get SPIFFS partition information (%s)",
-             esp_err_to_name(ret));
+           esp_err_to_name(ret));
   } else {
     HINFO("Partition size: total: %d, used: %d", total, used);
   }
