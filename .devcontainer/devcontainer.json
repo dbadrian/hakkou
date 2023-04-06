@@ -23,5 +23,6 @@
 	// Forward serial device to enable flash & monitor
 	"runArgs": [
 		"--device=/dev/ttyUSB0"
-	]
+	],
+	"remoteUser": "dev"
 }
