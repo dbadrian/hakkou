@@ -90,6 +90,10 @@ HMutex::HMutex() {
   configASSERT(xSemaphore_);
 }
 
+HMutex::~HMutex() {
+  vSemaphoreDelete(&xSemaphore_);
+}
+
 void HMutex::lock() {
   // wait indefinitely
   xSemaphoreTake(xSemaphore_, portMAX_DELAY);

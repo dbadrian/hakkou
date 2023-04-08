@@ -1,10 +1,13 @@
-// Directly based of https://github.com/mpusz/fsm-variant
-// with heavy extension and modification. Full original license reproduced in
-// full below.
 #pragma once
 
+#include <containers.h>
 #include <defines.h>
+#include <event.h>
+#include <internal_types.h>
 #include <platform/platform.h>
+
+// different state/routines
+#include <states/main_menu.h>
 
 #include <string_view>
 
@@ -14,97 +17,177 @@
 
 namespace hakkou {
 
-// Common events that can be reused
-namespace fsm {
-template <typename Derived, typename StateVariant>
-class FSM {
+template <typename Derived, typename States, typename Events>
+class FSMBase {
+  // This strongly inspired by various talks/blogs on how to use
+  // std::variant for building an FSM.
+  // This is most inspired by https://github.com/mpusz/fsm-variant
+  // However, it is neither directly build nor compatible with what you see
+  // there Primarily, there are various changes:
+  //  - more/direct integration with the event system of this project
+  // Events are also done via a variant-type, to integrate it into the
+  // existing event system
  protected:
-  StateVariant state_;
+  States state_;
 
-  HMutex mtx_;
-  TaskHandle_t handle_{nullptr};
+  HMutex task_mtx_;
+  TaskHandle_t task_handle_{nullptr};
 
  public:
-  FSM(){};
+  FSMBase(){};
 
-  [[nodiscard]] const StateVariant& get_state() const { return state_; }
-  //   StateVariant &get_state() { return state_; }
+  [[nodiscard]] const States& get_state() const { return state_; }
+
+  void dispatch(const Events& event) {
+    Derived& child = static_cast<Derived&>(*this);
+    auto new_state = std::visit(
+        [&](auto& s, auto& ev) -> std::optional<States> {
+          return child.on_event(s, ev);
+        },
+        state_, event);
+    if (new_state) {
+      state_ = *std::move(new_state);
+    }
+  }
 
   void notify_current_task(u32 value) {
-    if (handle_) {
-      xTaskNotify(handle_, value, eSetValueWithOverwrite);
+    if (task_handle_) {
+      xTaskNotify(task_handle_, value, eSetValueWithOverwrite);
     }
   }
 
   template <typename T>
   void task_cleanup(T& s) {
     if constexpr (requires { T::mtx; }) {
-      mtx_.lock();
+      task_mtx_.lock();
       HDEBUG("[FSM_BASE] Acquired mtx");
-    }
-    if (handle_) {
-      handle_ = nullptr;
-    }
-    if constexpr (requires { T::mtx; }) {
-      mtx_.unlock();
+
+      task_handle_ = nullptr;
+
+      task_mtx_.unlock();
       HDEBUG("[FSM_BASE] Released mtx");
     }
   }
+};
 
-  template <typename Event>
-  void dispatch(Event&& event) {
-    Derived& child = static_cast<Derived&>(*this);
-    auto new_state = std::visit(
-        [&](auto& s) -> std::optional<StateVariant> {
-          return child.on_event(s, std::forward<Event>(event));
-        },
-        state_);
-    if (new_state) {
-      state_ = *std::move(new_state);
+struct StateIdle {};
+struct StateMainMenu {
+  // Handle to task started for this state
+  // needs to be shutdown on transition!
+  std::unique_ptr<MainMenu> menu;
+};
+struct StateManualRun {};
+struct StateProgrammedRun {};
+struct StateSettings {};
+struct StateFailure {};
+
+using StatesT = std::variant<std::unique_ptr<StateIdle>,
+                             std::unique_ptr<StateMainMenu>,
+                             std::unique_ptr<StateManualRun>,
+                             std::unique_ptr<StateProgrammedRun>,
+                             std::unique_ptr<StateSettings>,
+                             std::unique_ptr<StateFailure> >;
+
+class MainMenuFSM : public FSMBase<MainMenuFSM, StatesT, SystemEvent> {
+ private:
+  constexpr static u16 EVENT_QUEUE_SIZE = 10;
+  Queue<SystemEvent, EVENT_QUEUE_SIZE> event_queue_;
+  EventHandle event_handle_;
+
+ public:
+  MainMenuFSM() {
+    // initial state.
+    state_ = std::make_unique<StateIdle>();
+
+    auto event_handle =
+        event_register(EventType::System, static_cast<void*>(this),
+                       MainMenuFSM::event_callback);
+    if (!event_handle) {
+      HFATAL("Couldn't register FSM event callback!");
+    } else {
+      event_handle_ = event_handle.value();
     }
   }
+
+  ~MainMenuFSM() { event_unregister(event_handle_); }
+
+  static CallbackResponse event_callback(Event event, void* listener) {
+    auto inst = static_cast<MainMenuFSM*>(listener);
+    inst->event_queue_.send_back(event.system_event);
+    return CallbackResponse::Continue;
+  }
+
+  void run() {
+    SystemEvent event;
+    while (true) {
+      // check for notifcations to kill itself
+
+      if (xQueueReceive(event_queue_.handle, static_cast<void*>(&event),
+                        portMAX_DELAY) != pdTRUE) {
+        break;
+      }
+      HDEBUG("[FSM] Got an event....");
+      dispatch(event);
+
+    }
+  }
+
+  template <typename State, typename Event>
+  auto on_event(State&, const Event&) {
+    HERROR("Invalid transition\n");
+    return std::nullopt;
+  }
+
+  template <typename State>
+  auto on_event(State&, const SystemEventCriticalFailure& err) {
+    HDEBUG("<Any|SystemEventCriticalFailure|StateFailure>\n");
+    HERROR("System Failure Occured\n");
+    // switch (err.code) {
+    //   default:
+    //     break;  // TODO Fill out
+    // }
+    // TODO: Run halting stuff.
+    return std::make_unique<StateFailure>();
+  }
+
+  auto on_event(std::unique_ptr<StateIdle>&, const SystemEventStart&) {
+    HDEBUG("<StateIdle|SystemEventStart|StateMainMenu>");
+    auto ns = std::make_unique<StateMainMenu>();
+    ns->menu = std::make_unique<MainMenu>();
+    
+    return ns;
+  }
+
+  auto on_event(std::unique_ptr<StateMainMenu>&, const SystemEventStartManual&) {
+    HDEBUG("<StateMainMenu|SystemEventStartManual|StateManualRun>\n");
+    auto ns = std::make_unique<StateManualRun>();
+    // start /create controller???
+    return ns;
+  }
+
+  // template <typename State>
+  // auto on_event(State&, const event_error& err) {
+  //   HERROR("Error Occurred\n");
+  //   switch (err.code) {
+  //     default:
+  //       break;  // TODO Fill out
+  //   }
+  //   return std::nullopt;
+  // }
+
+  // auto on_event(UP<StateIdle>&, const event_start&) {
+  //   HDEBUG("Transition <StateIdle, event_start>::StateMenu\n");
+
+  //   auto ns = std::make_unique<StateMainMenu>();
+  //   ns->run();
+  //   return ns;
+  // }
+
+  // state on_event(UP<StateMainMenu>& s, const event_ok&) {
+  //   HDEBUG("Transition <StateMainMenu, event_ok>->?\n");
+  //   // will wait and block for the task to be finished...
+  //   task_cleanup(*s);
+  // }
 };
-
-template <class T>
-using UP = typename std::unique_ptr<T>;
-
-struct event_start {};
-
-// some gui related events
-struct event_gui_ok {};
-struct event_gui_esc {};
-struct event_gui_right {};
-struct event_gui_right {};
-struct event_gui_up {};
-struct event_gui_down {};
-
-template <typename Error_T>
-struct event_error {
-  std::optional<Error_T> code{std::nullopt};
-};
-
-}  // namespace fsm
 
 }  // namespace hakkou
-
-// MIT License
-
-// Copyright (c) 2017 Mateusz Pusz
-
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.

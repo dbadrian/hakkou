@@ -5,6 +5,8 @@
 #include "sdkconfig.h"
 
 #include <array>
+#include <variant>
+#include <optional>
 
 namespace hakkou {
 
@@ -20,14 +22,42 @@ struct NECScanCode {
 };
 
 enum GUIEvent : u16 {
-  GUI_ESC,
-  GUI_OK,
-  GUI_UP,
-  GUI_DOWN,
-  GUI_LEFT,
-  GUI_RIGHT,
+  ESC,
+  OK,
+  UP,
+  DOWN,
+  LEFT,
+  RIGHT,
 };
 
 using TimeString = std::array<char, 8>;
+
+
+enum class SystemErrors {
+  OUT_OF_MEMORY,
+  UNKNOWN_FATAL,
+};
+
+struct SystemEventError {
+  std::optional<SystemErrors> code{std::nullopt};
+};
+struct SystemEventStart {};
+struct SystemEventSensorFailure {};
+struct SystemEventCriticalFailure {};
+struct SystemEventStartManual {};
+struct SystemEventStartProgram {};
+struct SystemEventOpenSettings {};
+struct SystemEventAbort {};
+struct SystemEventNOP {};
+
+using SystemEvent = std::variant<SystemEventError,
+                                SystemEventStart,
+                                SystemEventSensorFailure,
+                                SystemEventCriticalFailure,
+                                SystemEventStartManual,
+                                SystemEventStartProgram,
+                                SystemEventOpenSettings,
+                                SystemEventAbort,
+                                SystemEventNOP>;
 
 }  // namespace hakkou

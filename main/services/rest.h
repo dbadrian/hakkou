@@ -177,27 +177,27 @@ static esp_err_t gui_event_post_handler(httpd_req_t* req) {
     switch (guicmd->valueint) {
       case -1: {
         event_post(
-            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_ESC});
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::ESC});
       } break;
       case 0: {
         event_post(
-            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_OK});
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::OK});
       } break;
       case 1: {
         event_post(
-            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_UP});
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::UP});
       } break;
       case 2: {
         event_post(
-            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_DOWN});
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::DOWN});
       } break;
       case 3: {
         event_post(
-            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_LEFT});
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::LEFT});
       } break;
       case 4: {
         event_post(
-            {.event_type = EventType::GUI, .gui_event = GUIEvent::GUI_RIGHT});
+            {.event_type = EventType::GUI, .gui_event = GUIEvent::RIGHT});
       } break;
 
       default: {

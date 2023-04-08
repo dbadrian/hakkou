@@ -17,7 +17,7 @@ static EventSystemState state;
 
 // Task/Stack buffer
 constexpr static uint32_t STACK_SIZE = 4196;
-constexpr static UBaseType_t PRIORITY = 9;  // TODO: set somewhere else
+constexpr static UBaseType_t PRIORITY = 20;  // TODO: set somewhere else, but ye...high prio
 StackType_t task_stack[STACK_SIZE];
 StaticTask_t task_buffer;
 TaskHandle_t xHandle{nullptr};

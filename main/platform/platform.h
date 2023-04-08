@@ -20,6 +20,7 @@ void platform_sleep(u64 ms);
 class HMutex {
  public:
   HMutex();
+  ~HMutex();
 
   // Blocks until a lock can be acquired for the current execution agent
   // (thread, process, task). If an exception is thrown, no lock is acquired.

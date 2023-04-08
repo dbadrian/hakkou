@@ -21,9 +21,6 @@ void Controller::clean_up() {
   if (food_handle) {
     event_unregister(food_handle.value());
   }
-  if (system_handle) {
-    event_unregister(system_handle.value());
-  }
   if (gui_handle) {
     event_unregister(gui_handle.value());
   }
@@ -68,7 +65,7 @@ void Controller::handle_abort_screen_events(GUIEvent event) {
   };
 
   switch (event) {
-    case GUIEvent::GUI_OK:
+    case GUIEvent::OK:
       if (gui_state_.selected_cont) {
         leave_screen();
       } else {
@@ -78,15 +75,15 @@ void Controller::handle_abort_screen_events(GUIEvent event) {
                     eSetValueWithOverwrite);
       }
       break;
-    case GUIEvent::GUI_UP:
+    case GUIEvent::UP:
       gui_state_.selected_cont = !gui_state_.selected_cont;
       abort_screen_.select(gui_state_.selected_cont);
       break;
-    case GUIEvent::GUI_DOWN:
+    case GUIEvent::DOWN:
       gui_state_.selected_cont = !gui_state_.selected_cont;
       abort_screen_.select(gui_state_.selected_cont);
       break;
-    case GUIEvent::GUI_ESC:
+    case GUIEvent::ESC:
       leave_screen();
       break;
     default:
@@ -97,15 +94,15 @@ void Controller::handle_abort_screen_events(GUIEvent event) {
 
 void Controller::handle_main_screen_events(GUIEvent event) {
   switch (event) {
-    case GUIEvent::GUI_OK:
+    case GUIEvent::OK:
       break;
-    case GUIEvent::GUI_UP: {
+    case GUIEvent::UP: {
       gui_state_.selected_temp = !gui_state_.selected_temp;
     } break;
-    case GUIEvent::GUI_DOWN: {
+    case GUIEvent::DOWN: {
       gui_state_.selected_temp = !gui_state_.selected_temp;
     } break;
-    case GUIEvent::GUI_LEFT: {
+    case GUIEvent::LEFT: {
       {
         const std::scoped_lock lock(state_mtx_);
 
@@ -116,7 +113,7 @@ void Controller::handle_main_screen_events(GUIEvent event) {
         }
       }
     } break;
-    case GUIEvent::GUI_RIGHT: {
+    case GUIEvent::RIGHT: {
       {
         const std::scoped_lock lock(state_mtx_);
 
@@ -128,7 +125,7 @@ void Controller::handle_main_screen_events(GUIEvent event) {
         HFATAL("%f", temp_setpoint_);
       }
     } break;
-    case GUIEvent::GUI_ESC: {
+    case GUIEvent::ESC: {
       // switch screens
       gui_state_.on_abort_screen = true;
       gui_state_.selected_temp = true;

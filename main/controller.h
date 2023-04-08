@@ -77,12 +77,6 @@ class Controller {
     // Register for the various relevent events
     //  For dispatching to the respective callback, we use a single
     //  static method `event_callback` that switches to right method
-    system_handle = event_register(EventType::System, static_cast<void*>(this),
-                                   Controller::event_callback);
-    if (!system_handle) {
-      HFATAL("Couldn't register controller event callback!");
-      is_initialized_ = false;
-    }
     hmd_handle =
         event_register(EventType::HumidityAmbient, static_cast<void*>(this),
                        Controller::event_callback);
@@ -278,7 +272,6 @@ class Controller {
   std::optional<EventHandle> hmd_handle;
   std::optional<EventHandle> amb_handle;
   std::optional<EventHandle> food_handle;
-  std::optional<EventHandle> system_handle;
   std::optional<EventHandle> gui_handle;
 
   // PID to manage the heater

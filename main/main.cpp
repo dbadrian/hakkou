@@ -1,6 +1,7 @@
 
 #include "defines.h"
 #include "event.h"
+#include "fsm.h"
 #include "internal_types.h"
 #include "logger.h"
 #include "platform/platform.h"
@@ -88,11 +89,19 @@ extern "C" void app_main(void) {
 
   TaskHandle_t xHandle = NULL;
   xTaskCreate(task_manager, "TaskManager", 2048, nullptr, 20, &xHandle);
-
-  auto ctrl = new Controller();
-  // wait for sensors to initialzie...
   platform_sleep(2000);
-  ctrl->run();
+
+  // auto ctrl = new Controller();
+  // // wait for sensors to initialzie...
+  // ctrl->run();
+
+  MainMenuFSM* fsm = new MainMenuFSM();
+  event_post(Event{
+      .event_type = EventType::System,
+      .system_event = SystemEventStart{},
+  });
+
+  fsm->run();
 
   event_post(Event{
       .event_type = EventType::ScreenUpdate,

@@ -27,6 +27,7 @@ enum class EventType : u16 {
   NUM_EVENTS,
 };
 
+
 // tagged union approach
 struct Event {
   EventType event_type;
@@ -43,6 +44,8 @@ struct Event {
     GUIEvent gui_event;
     // 4 * 21 = 84 bytes
     ScreenData screen_data;
+    // provide a default value for the variant types
+    SystemEvent system_event = SystemEventNOP{};
   };
 };
 // TODO: Static assert the sizeevent_initialize(

@@ -3,7 +3,6 @@ ARG UID=1000
 ARG GID=${UID}
 
 FROM espressif/idf:latest
-cd 
 ARG USER
 ARG UID
 ARG GID
