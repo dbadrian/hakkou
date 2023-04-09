@@ -1,0 +1,14 @@
+services:
+  idf:
+#    user: "1000:1000"
+    working_dir: /code/
+    build:
+      context: .devcontainer/
+      dockerfile: Dockerfile
+    volumes:
+      - .:/code
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    entrypoint: /bin/bash
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
