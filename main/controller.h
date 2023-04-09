@@ -106,6 +106,16 @@ class Controller {
       is_initialized_ = false;
     }
 
+    // TODO: verify
+    task_handle_ = xTaskCreateStatic(
+        initialize,       /* Function that implements the task. */
+        "Controller",     /* Text name for the task. */
+        STACK_SIZE,       /* Number of indexes in the xStack array. */
+        this,             /* Parameter passed into the task. */
+        PRIORITY,         /* Priority at which the task is created. */
+        task_buf_,        /* Array to use as the task's stack. */
+        &task_internal_); /* Variable to hold the task's data structure. */
+
     if (is_initialized_) {
       HINFO("Initialized controller.");
     } else {
@@ -161,6 +171,10 @@ class Controller {
   CallbackResponse ambient_hmd_cb(const Event event);
   CallbackResponse gui_event_cb(const Event event);
 
+  static void initialize(void* cls) {
+    static_cast<Controller*>(cls)->run_manual();
+  }
+
   void run_manual() {
     const u32 start_time_s = get_time_sec();
     u32 time_passed_m = 0;
@@ -170,7 +184,6 @@ class Controller {
 
     GUIEvent gui_event;
     active_screen_ = &progress_screen_;
-
 
     u32 time_;
     while (running) {
@@ -198,7 +211,7 @@ class Controller {
       // latest (adjusted) temperature, putting it to the PID
       // and then publishing it
       state_mtx_.lock();
-       auto [temp_ctrl, food_is_control] =
+      auto [temp_ctrl, food_is_control] =
           get_control_temperature(temp_setpoint_);
       temp_pid_duty = temperature_pid_.update(temp_setpoint_, temp_ctrl);
       state_mtx_.unlock();
@@ -266,7 +279,7 @@ class Controller {
   bool is_initialized_{false};
   // Task/Stack buffer
   StackType_t task_buf_[STACK_SIZE];
-  StaticTask_t xTaskBuffer;
+  StaticTask_t task_internal_;
   TaskHandle_t task_handle_;
 
   std::optional<EventHandle> hmd_handle;

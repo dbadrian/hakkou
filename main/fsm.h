@@ -3,6 +3,7 @@
 #include <containers.h>
 #include <defines.h>
 #include <event.h>
+#include <controller.h>
 #include <internal_types.h>
 #include <platform/platform.h>
 
@@ -76,7 +77,9 @@ struct StateMainMenu {
   // needs to be shutdown on transition!
   std::unique_ptr<MainMenu> menu;
 };
-struct StateManualRun {};
+struct StateManualRun {
+  std::unique_ptr<Controller> ctrl;
+};
 struct StateProgrammedRun {};
 struct StateSettings {};
 struct StateFailure {};
@@ -154,14 +157,13 @@ class MainMenuFSM : public FSMBase<MainMenuFSM, StatesT, SystemEvent> {
     HDEBUG("<StateIdle|SystemEventStart|StateMainMenu>");
     auto ns = std::make_unique<StateMainMenu>();
     ns->menu = std::make_unique<MainMenu>();
-    
     return ns;
   }
 
   auto on_event(std::unique_ptr<StateMainMenu>&, const SystemEventStartManual&) {
     HDEBUG("<StateMainMenu|SystemEventStartManual|StateManualRun>\n");
     auto ns = std::make_unique<StateManualRun>();
-    // start /create controller???
+    ns->ctrl = std::make_unique<Controller>();
     return ns;
   }
 
