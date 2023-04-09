@@ -77,6 +77,10 @@ void platform_log(LogLevel level, std::string_view message, va_list args) {
               log_level_string[static_cast<u8>(level)]);
   std::vprintf(message.data(), args);
   std::printf("\033[0m\n");
+
+  if (level == LogLevel::FATAL) {
+    abort();
+  }
 }
 
 void platform_sleep(u64 ms) {
@@ -91,7 +95,7 @@ HMutex::HMutex() {
 }
 
 HMutex::~HMutex() {
-  vSemaphoreDelete(&xSemaphore_);
+  vSemaphoreDelete(xSemaphore_);
 }
 
 void HMutex::lock() {
