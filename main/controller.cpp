@@ -45,10 +45,11 @@ CallbackResponse Controller::ambient_hmd_cb(const Event event) {
 }
 
 CallbackResponse Controller::gui_event_cb(const Event event) {
-  if (xQueueSendToBack(gui_event_queue_, &event.gui_event, pdMS_TO_TICKS(10)) !=
-      pdTRUE) {
-    HERROR("Couldn't queue gui event into controller buffer");
-  }
+  gui_event_queue_.send_back(event.gui_event, pdMS_TO_TICKS(10));
+  // TODO: handle return errors
+  //     if (xQueueSendToBack(gui_event_queue_, , ) != pdTRUE) {
+  //   HERROR("Couldn't queue gui event into controller buffer");
+  // }
   return CallbackResponse::Continue;
 }
 
@@ -69,7 +70,7 @@ void Controller::handle_abort_screen_events(GUIEvent event) {
       if (gui_state_.selected_cont) {
         leave_screen();
       } else {
-        // TODO:
+        // Notify controller loop itself
         xTaskNotify(task_handle_,
                     static_cast<u32>(ControllerMessages::PROCESS_DIE),
                     eSetValueWithOverwrite);
@@ -116,13 +117,11 @@ void Controller::handle_main_screen_events(GUIEvent event) {
     case GUIEvent::RIGHT: {
       {
         const std::scoped_lock lock(state_mtx_);
-
         if (gui_state_.selected_temp) {
           temp_setpoint_ += 0.5;
         } else {
           hmd_setpoint_ += 0.5;
         }
-        HFATAL("%f", temp_setpoint_);
       }
     } break;
     case GUIEvent::ESC: {

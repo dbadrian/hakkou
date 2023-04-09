@@ -1,9 +1,9 @@
 #pragma once
 
 #include <containers.h>
+#include <controller.h>
 #include <defines.h>
 #include <event.h>
-#include <controller.h>
 #include <internal_types.h>
 #include <platform/platform.h>
 
@@ -83,13 +83,17 @@ struct StateManualRun {
 struct StateProgrammedRun {};
 struct StateSettings {};
 struct StateFailure {};
+struct StateShutdown {};
+struct StateFinished {};
 
 using StatesT = std::variant<std::unique_ptr<StateIdle>,
                              std::unique_ptr<StateMainMenu>,
                              std::unique_ptr<StateManualRun>,
                              std::unique_ptr<StateProgrammedRun>,
                              std::unique_ptr<StateSettings>,
-                             std::unique_ptr<StateFailure> >;
+                             std::unique_ptr<StateFailure>,
+                             std::unique_ptr<StateShutdown>,
+                             std::unique_ptr<StateFinished>>;
 
 class MainMenuFSM : public FSMBase<MainMenuFSM, StatesT, SystemEvent> {
  private:
@@ -131,7 +135,6 @@ class MainMenuFSM : public FSMBase<MainMenuFSM, StatesT, SystemEvent> {
       }
       HDEBUG("[FSM] Got an event....");
       dispatch(event);
-
     }
   }
 
@@ -160,11 +163,26 @@ class MainMenuFSM : public FSMBase<MainMenuFSM, StatesT, SystemEvent> {
     return ns;
   }
 
-  auto on_event(std::unique_ptr<StateMainMenu>&, const SystemEventStartManual&) {
+  auto on_event(std::unique_ptr<StateMainMenu>&,
+                const SystemEventStartManual&) {
     HDEBUG("<StateMainMenu|SystemEventStartManual|StateManualRun>\n");
     auto ns = std::make_unique<StateManualRun>();
     ns->ctrl = std::make_unique<Controller>();
     return ns;
+  }
+
+  auto on_event(std::unique_ptr<StateManualRun>&, const SystemEventAbort&) {
+    HDEBUG("<SystemEventStartManual|SystemEventAbort|StateShutdown>\n");
+
+    event_post(Event{
+        .event_type = EventType::ScreenUpdate,
+        .screen_data = {{{"   <  SHUTDOWN  >   "},
+                         {"                    "},
+                         {"   Manual Restart   "},
+                         {"      Required      "}}},
+    });
+
+    return std::make_unique<StateShutdown>();
   }
 
   // template <typename State>

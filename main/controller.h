@@ -3,6 +3,7 @@
 #include "defines.h"
 #include "event.h"
 #include "gui.h"
+#include "containers.h"
 #include "hardware/pid.h"
 #include "platform/platform.h"
 
@@ -50,8 +51,7 @@ class Controller {
   constexpr static u64 UPDATE_RATE_MS = 100;
 
   // GUI Queue
-  constexpr static u8 GUI_QUEUE_LENGTH = 5;
-  constexpr static u8 GUI_QUEUE_ITEM_SIZE = sizeof(Event::gui_event);
+  constexpr static u8 GUI_QUEUE_LENGTH = 1;
 
   // Default values
   constexpr static float DEFAULT_TEMP_SETPOINT = 21;
@@ -68,11 +68,6 @@ class Controller {
             .i_limit_min = integrator_min,
             .i_limit_max = integrator_max,
         }) {
-    is_initialized_ = true;
-
-    gui_event_queue_ =
-        xQueueCreateStatic(GUI_QUEUE_LENGTH, GUI_QUEUE_ITEM_SIZE,
-                           gui_queue_storage, &gui_queue_internal_);
 
     // Register for the various relevent events
     //  For dispatching to the respective callback, we use a single
@@ -82,28 +77,24 @@ class Controller {
                        Controller::event_callback);
     if (!hmd_handle) {
       HFATAL("Couldn't register controller event callback!");
-      is_initialized_ = false;
     }
     amb_handle =
         event_register(EventType::TemperatureAmbient, static_cast<void*>(this),
                        Controller::event_callback);
     if (!amb_handle) {
       HFATAL("Couldn't register controller event callback!");
-      is_initialized_ = false;
     }
     food_handle =
         event_register(EventType::TemperatureFood, static_cast<void*>(this),
                        Controller::event_callback);
     if (!food_handle) {
       HFATAL("Couldn't register controller event callback!");
-      is_initialized_ = false;
     }
 
     gui_handle = event_register(EventType::GUI, static_cast<void*>(this),
                                 Controller::event_callback);
     if (!gui_handle) {
       HFATAL("Couldn't register controller event callback!");
-      is_initialized_ = false;
     }
 
     // TODO: verify
@@ -115,12 +106,6 @@ class Controller {
         PRIORITY,         /* Priority at which the task is created. */
         task_buf_,        /* Array to use as the task's stack. */
         &task_internal_); /* Variable to hold the task's data structure. */
-
-    if (is_initialized_) {
-      HINFO("Initialized controller.");
-    } else {
-      HERROR("Failed initializing controller.");
-    }
   }
 
   void run() {
@@ -191,7 +176,7 @@ class Controller {
       // TODO 1. check if errors occurred?
 
       // Process any available GUI event (no wait)
-      while (xQueueReceive(gui_event_queue_, static_cast<void*>(&gui_event),
+      while (xQueueReceive(gui_event_queue_.handle, static_cast<void*>(&gui_event),
                            0) == pdTRUE) {
         // only update the content of the screens
         // actual update event will be sent later in this loop
@@ -248,6 +233,10 @@ class Controller {
       auto notification = ulTaskNotifyTake(pdTRUE, 0);
       if (notification == static_cast<u32>(ControllerMessages::PROCESS_DIE)) {
         HDEBUG("[Controller] Received kill notifcation %lu", notification);
+        event_post(Event{
+            .event_type = EventType::System,
+            .system_event = SystemEventAbort{},
+        });
         break;
       }
 
@@ -259,6 +248,9 @@ class Controller {
         platform_sleep(static_cast<u32>(UPDATE_RATE_MS - time_iteration));
       }
     }
+
+    // Cleanup the task
+    vTaskDelete(NULL);
   }
 
   [[nodiscard]] std::pair<float, bool> get_control_temperature(float setpoint) {
@@ -304,9 +296,7 @@ class Controller {
   ControllerGUIState gui_state_;
   ProgressScreen progress_screen_;
   AbortScreen abort_screen_;
-  u8 gui_queue_storage[GUI_QUEUE_LENGTH * GUI_QUEUE_ITEM_SIZE];
-  StaticQueue_t gui_queue_internal_;
-  QueueHandle_t gui_event_queue_;
-};
+  Queue<GUIEvent, GUI_QUEUE_LENGTH> gui_event_queue_;
+  };
 
 }  // namespace hakkou

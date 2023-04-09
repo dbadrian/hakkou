@@ -47,17 +47,20 @@ struct Queue {
   QueueHandle_t handle;
 
   Queue() {
-    HWARN("QUEUE CREATED");
+    HDEBUG("QUEUE CREATED");
     handle =
         xQueueCreateStatic(EventQueueSize, sizeof(ItemType), buffer, &queue);
     // TODO: handle better
     configASSERT(handle);
   }
 
-  ~Queue() { HWARN("QUEUE Destroyed"); }
+  ~Queue() {
+    vQueueDelete(handle);
+    HDEBUG("QUEUE Destroyed");
+  }
 
   void send_front(const ItemType& item, TickType_t wait = portMAX_DELAY) {
-    //TODO handle failure
+    // TODO handle failure
     xQueueSendToFront(handle, &item, wait);
   }
   void send_back(const ItemType& item, TickType_t wait = portMAX_DELAY) {

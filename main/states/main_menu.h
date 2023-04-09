@@ -34,7 +34,6 @@ class MainMenu {
 
   ~MainMenu() {
     event_unregister(gui_handle);
-    HFATAL("GOT DESTROYED!!");
   }
 
   static CallbackResponse event_handler(Event event, void* listener) {

@@ -101,16 +101,8 @@ extern "C" void app_main(void) {
       .system_event = SystemEventStart{},
   });
 
+  // Now start the main FSM
   fsm->run();
 
-  event_post(Event{
-      .event_type = EventType::ScreenUpdate,
-      .screen_data = {{{"                    "},
-                       {"       MANUAL       "},
-                       {"      SHUTDOWN      "},
-                       {"                    "}}},
-  });
-
-  // Now start the main FSM
   vTaskSuspend(NULL);
 }
