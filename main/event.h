@@ -2,6 +2,7 @@
 
 #include "defines.h"
 #include "internal_types.h"
+#include "logger.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -26,7 +27,6 @@ enum class EventType : u16 {
   //
   NUM_EVENTS,
 };
-
 
 // tagged union approach
 struct Event {
@@ -106,5 +106,20 @@ bool event_post(Event event,
                 TickType_t wait = portMAX_DELAY);
 
 void event_loop(void* params);
+
+class ScopedEventHandleGuard {
+ public:
+  ScopedEventHandleGuard(const EventHandle& handle) : handle_(handle) {}
+  ScopedEventHandleGuard(const std::optional<EventHandle>& handle) {
+    if (!handle) {
+      HFATAL("Received empty handle. Probably the registration failed.");
+    }
+    handle_ = handle.value();
+  }
+  ~ScopedEventHandleGuard() { event_unregister(handle_); }
+
+ private:
+  EventHandle handle_;
+};
 
 }  // namespace hakkou

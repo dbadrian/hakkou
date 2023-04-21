@@ -17,7 +17,8 @@ static EventSystemState state;
 
 // Task/Stack buffer
 constexpr static uint32_t STACK_SIZE = 4196;
-constexpr static UBaseType_t PRIORITY = 20;  // TODO: set somewhere else, but ye...high prio
+constexpr static UBaseType_t PRIORITY =
+    20;  // TODO: set somewhere else, but ye...high prio
 StackType_t task_stack[STACK_SIZE];
 StaticTask_t task_buffer;
 TaskHandle_t xHandle{nullptr};
@@ -177,14 +178,5 @@ void event_loop(void* params) {
   // just a bit of hidden behaviour?
   vTaskDelete(NULL);
 }
-
-// class ScopedEventHandleGuard {
-//  public:
-//   HandleGuard(EventHandle& handle) : handle_(handle) {}
-//   ~HandleGuard() { event_unregister(handle_); }
-
-//  private:
-//   EventHandle handle_;
-// };
 
 }  // namespace hakkou

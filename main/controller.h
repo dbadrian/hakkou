@@ -1,9 +1,9 @@
 #pragma once
 
+#include "containers.h"
 #include "defines.h"
 #include "event.h"
 #include "gui.h"
-#include "containers.h"
 #include "hardware/pid.h"
 #include "platform/platform.h"
 
@@ -58,7 +58,19 @@ class Controller {
   constexpr static float DEFAULT_HMD_SETPOINT = 50;
 
   Controller()
-      : temperature_pid_(PIDConfig{
+      : hmd_handle_(event_register(EventType::HumidityAmbient,
+                                   static_cast<void*>(this),
+                                   Controller::event_callback)),
+        amb_handle_(event_register(EventType::TemperatureAmbient,
+                                   static_cast<void*>(this),
+                                   Controller::event_callback)),
+        food_handle_(event_register(EventType::TemperatureFood,
+                                    static_cast<void*>(this),
+                                    Controller::event_callback)),
+        gui_handle_(event_register(EventType::GUI,
+                                   static_cast<void*>(this),
+                                   Controller::event_callback)),
+        temperature_pid_(PIDConfig{
             .Kp = Kp,
             .Ki = Ki,
             .Kd = Kd,
@@ -68,35 +80,6 @@ class Controller {
             .i_limit_min = integrator_min,
             .i_limit_max = integrator_max,
         }) {
-
-    // Register for the various relevent events
-    //  For dispatching to the respective callback, we use a single
-    //  static method `event_callback` that switches to right method
-    hmd_handle =
-        event_register(EventType::HumidityAmbient, static_cast<void*>(this),
-                       Controller::event_callback);
-    if (!hmd_handle) {
-      HFATAL("Couldn't register controller event callback!");
-    }
-    amb_handle =
-        event_register(EventType::TemperatureAmbient, static_cast<void*>(this),
-                       Controller::event_callback);
-    if (!amb_handle) {
-      HFATAL("Couldn't register controller event callback!");
-    }
-    food_handle =
-        event_register(EventType::TemperatureFood, static_cast<void*>(this),
-                       Controller::event_callback);
-    if (!food_handle) {
-      HFATAL("Couldn't register controller event callback!");
-    }
-
-    gui_handle = event_register(EventType::GUI, static_cast<void*>(this),
-                                Controller::event_callback);
-    if (!gui_handle) {
-      HFATAL("Couldn't register controller event callback!");
-    }
-
     // TODO: verify
     task_handle_ = xTaskCreateStatic(
         initialize,       /* Function that implements the task. */
@@ -176,8 +159,8 @@ class Controller {
       // TODO 1. check if errors occurred?
 
       // Process any available GUI event (no wait)
-      while (xQueueReceive(gui_event_queue_.handle, static_cast<void*>(&gui_event),
-                           0) == pdTRUE) {
+      while (xQueueReceive(gui_event_queue_.handle,
+                           static_cast<void*>(&gui_event), 0) == pdTRUE) {
         // only update the content of the screens
         // actual update event will be sent later in this loop
         if (gui_state_.on_abort_screen) {
@@ -274,10 +257,10 @@ class Controller {
   StaticTask_t task_internal_;
   TaskHandle_t task_handle_;
 
-  std::optional<EventHandle> hmd_handle;
-  std::optional<EventHandle> amb_handle;
-  std::optional<EventHandle> food_handle;
-  std::optional<EventHandle> gui_handle;
+  ScopedEventHandleGuard hmd_handle_;
+  ScopedEventHandleGuard amb_handle_;
+  ScopedEventHandleGuard food_handle_;
+  ScopedEventHandleGuard gui_handle_;
 
   // PID to manage the heater
   HMutex state_mtx_;
@@ -297,6 +280,6 @@ class Controller {
   ProgressScreen progress_screen_;
   AbortScreen abort_screen_;
   Queue<GUIEvent, GUI_QUEUE_LENGTH> gui_event_queue_;
-  };
+};
 
 }  // namespace hakkou

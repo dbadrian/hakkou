@@ -6,24 +6,11 @@
 namespace hakkou {
 
 void Controller::clean_up() {
+  // Reduce fan Output to be a bit more quiet...
   event_post({
       .event_type = EventType::FanDuty,
-      .fan_duty = 0,
+      .fan_duty = 40,
   });
-  HERROR("CLEANED UP...");
-
-  if (hmd_handle) {
-    event_unregister(hmd_handle.value());
-  }
-  if (amb_handle) {
-    event_unregister(amb_handle.value());
-  }
-  if (food_handle) {
-    event_unregister(food_handle.value());
-  }
-  if (gui_handle) {
-    event_unregister(gui_handle.value());
-  }
 }
 
 CallbackResponse Controller::food_temp_event_cb(const Event event) {
