@@ -14,7 +14,7 @@
 #include "hardware/heater.h"
 #include "hardware/lcd.h"
 
-#include "hardware/nec_remote.h"
+// #include "hardware/nec_remote.h"
 
 #include "task_manager.h"
 
@@ -33,10 +33,10 @@ void setup_hardware() {
   // temporary bring up routine
   LCD* lcd = new LCD();
 
-  auto remote = new NECRemote(CONFIG_IR_ADDR);
-  if (!event_register(EventType::IRCode, nullptr, map_ircode_to_gui_cmd)) {
-    HERROR("Couldn't initialize the IR remote!");
-  }
+  // auto remote = new NECRemote(CONFIG_IR_ADDR);
+  // if (!event_register(EventType::IRCode, nullptr, map_ircode_to_gui_cmd)) {
+  //   HERROR("Couldn't initialize the IR remote!");
+  // }
 
   Fan4W* fan = new Fan4W(CONFIG_FAN_PWM_PIN, CONFIG_FAN_TACHO_PIN);
   event_post(

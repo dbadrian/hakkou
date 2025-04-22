@@ -12,9 +12,6 @@ idf_component_register(
         "hardware/h_ds18x20.cpp"
         "hardware/pid.cpp"
         "hardware/heater.cpp"
-        "hardware/nec_remote.cpp"
-        # external sources
-        "ext/nec_ir_remote.cpp"
         #####
         # "preferences.cpp"
 
