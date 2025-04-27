@@ -12,9 +12,12 @@ idf_component_register(
         "hardware/h_ds18x20.cpp"
         "hardware/pid.cpp"
         "hardware/heater.cpp"
+        "services/ble/gap.cpp"
+        "services/ble/gatt_svc.cpp"
         #####
         # "preferences.cpp"
 
+        PRIV_REQUIRES nvs_flash bmp280 onewire ds18x20 hd44780 pcf8574 json esp_http_server spiffs esp_wifi bt
 
     INCLUDE_DIRS "."
 )

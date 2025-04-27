@@ -18,6 +18,7 @@
 
 #include "task_manager.h"
 
+#include "services/ble/ble.h"
 #include "services/rest.h"
 #include "services/wifi.h"
 //////////
@@ -26,8 +27,116 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "services/ble/common.h"
+#include "services/ble/gap.h"
+#include "services/ble/gatt_svc.h"
 
 using namespace hakkou;
+
+
+
+
+/* Library function declarations */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void ble_store_config_init(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+/* Private function declarations */
+static void nimble_host_config_init(void);
+static void nimble_host_task(void* param);
+
+/* Private functions */
+/*
+ *  Stack event callback functions
+ *      - on_stack_reset is called when host resets BLE stack due to errors
+ *      - on_stack_sync is called when host has synced with controller
+ */
+static void on_stack_reset(int reason) {
+  /* On reset, print reset reason to console */
+  ESP_LOGI(TAG, "nimble stack reset, reset reason: %d", reason);
+}
+
+static void on_stack_sync(void) {
+  /* On stack sync, do advertising initialization */
+  adv_init();
+}
+
+static void nimble_host_config_init(void) {
+  /* Set host callbacks */
+  ble_hs_cfg.reset_cb = on_stack_reset;
+  ble_hs_cfg.sync_cb = on_stack_sync;
+  ble_hs_cfg.gatts_register_cb = gatt_svr_register_cb;
+  ble_hs_cfg.store_status_cb = ble_store_util_status_rr;
+
+  /* Security manager configuration */
+  ble_hs_cfg.sm_io_cap = BLE_HS_IO_DISPLAY_ONLY;
+  ble_hs_cfg.sm_bonding = 1;
+  ble_hs_cfg.sm_mitm = 1;
+  ble_hs_cfg.sm_our_key_dist |=
+      BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
+  ble_hs_cfg.sm_their_key_dist |=
+      BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
+
+  /* Store host configuration */
+  ble_store_config_init();
+}
+
+static void nimble_host_task(void* param) {
+  /* Task entry log */
+  ESP_LOGI(TAG, "nimble host task has been started!");
+
+  /* This function won't return until nimble_port_stop() is executed */
+  nimble_port_run();
+
+  /* Clean up at exit */
+  vTaskDelete(NULL);
+}
+
+void init_ble(void) {
+  /* Local variables */
+  int rc;
+  uint32_t seed = esp_random();
+  esp_err_t ret;
+
+  /* Random generator initialization */
+  srand(seed);
+
+  /* NimBLE stack initialization */
+  ret = nimble_port_init();
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "failed to initialize nimble stack, error code: %d ", ret);
+    return;
+  }
+
+  // /* GAP service initialization */
+  rc = gap_init();
+  if (rc != 0) {
+    ESP_LOGE(TAG, "failed to initialize GAP service, error code: %d", rc);
+    return;
+  }
+
+  /* GATT server initialization */
+  rc = gatt_svc_init();
+  if (rc != 0) {
+    ESP_LOGE(TAG, "failed to initialize GATT server, error code: %d", rc);
+    return;
+  }
+
+  /* NimBLE host configuration initialization */
+  nimble_host_config_init();
+
+  // /* Start NimBLE host task thread and return */
+  xTaskCreate(nimble_host_task, "NimBLE Host", 4 * 1024, NULL, 5, NULL);
+}
+
+
 
 void setup_hardware() {
   // temporary bring up routine
@@ -84,8 +193,9 @@ extern "C" void app_main(void) {
 
   // bring up wifi
   wifi_initialize();
+  init_ble();
   rest_initialize();
-  setup_hardware_debug();
+  // setup_hardware_debug();
 
   TaskHandle_t xHandle = NULL;
   xTaskCreate(task_manager, "TaskManager", 2048, nullptr, 20, &xHandle);
@@ -95,14 +205,14 @@ extern "C" void app_main(void) {
   // // wait for sensors to initialzie...
   // ctrl->run();
 
-  MainMenuFSM* fsm = new MainMenuFSM();
-  event_post(Event{
-      .event_type = EventType::System,
-      .system_event = SystemEventStart{},
-  });
+  // MainMenuFSM* fsm = new MainMenuFSM();
+  // event_post(Event{
+  //     .event_type = EventType::System,
+  //     .system_event = SystemEventStart{},
+  // });
 
-  // Now start the main FSM
-  fsm->run();
+  // // Now start the main FSM
+  // fsm->run();
 
   vTaskSuspend(NULL);
 }

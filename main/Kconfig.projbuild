@@ -1,6 +1,6 @@
 menu "Hakkou Configuration"
 
-
+    orsource "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
 
     # Fan    
     config FAN_PWM_PIN
