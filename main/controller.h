@@ -70,6 +70,9 @@ class Controller {
         gui_handle_(event_register(EventType::GUI,
                                    static_cast<void*>(this),
                                    Controller::event_callback)),
+        set_target_temp_handle_(event_register(EventType::TargetTemperature,
+                                               static_cast<void*>(this),
+                                               Controller::event_callback)),
         temperature_pid_(PIDConfig{
             .Kp = Kp,
             .Ki = Ki,
@@ -117,6 +120,9 @@ class Controller {
       case EventType::GUI: {
         return instance->gui_event_cb(event);
       } break;
+      case EventType::TargetTemperature: {
+        return instance->set_target_temp_cb(event);
+      } break;
       default:
         return CallbackResponse::Continue;
     }
@@ -138,6 +144,7 @@ class Controller {
   CallbackResponse ambient_temp_event_cb(const Event event);
   CallbackResponse ambient_hmd_cb(const Event event);
   CallbackResponse gui_event_cb(const Event event);
+  CallbackResponse set_target_temp_cb(const Event event);
 
   static void initialize(void* cls) {
     static_cast<Controller*>(cls)->run_manual();
@@ -261,12 +268,13 @@ class Controller {
   ScopedEventHandleGuard amb_handle_;
   ScopedEventHandleGuard food_handle_;
   ScopedEventHandleGuard gui_handle_;
+  ScopedEventHandleGuard set_target_temp_handle_;
 
   // PID to manage the heater
   HMutex state_mtx_;
   PID temperature_pid_;
-  float temp_setpoint_{DEFAULT_TEMP_SETPOINT};
-  float hmd_setpoint_{DEFAULT_HMD_SETPOINT};
+  f32 temp_setpoint_{DEFAULT_TEMP_SETPOINT};
+  f32 hmd_setpoint_{DEFAULT_HMD_SETPOINT};
 
   // single mtx for measurements is enough
   // since the event loop will only process one

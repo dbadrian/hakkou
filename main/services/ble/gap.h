@@ -3,8 +3,7 @@
  *
  * SPDX-License-Identifier: Unlicense OR CC0-1.0
  */
-#ifndef GAP_SVC_H
-#define GAP_SVC_H
+#pragma once
 
 /* Includes */
 /* NimBLE GAP APIs */
@@ -21,4 +20,3 @@ void adv_init(void);
 bool is_connection_encrypted(uint16_t conn_handle);
 int gap_init(void);
 
-#endif // GAP_SVC_H

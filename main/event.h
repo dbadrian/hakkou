@@ -18,6 +18,7 @@ enum class EventType : u16 {
   HumidityAmbient,
   TemperatureAmbient,
   TemperatureFood,
+  TargetTemperature,
   FanRPM,
   FanDuty,
   HeaterDuty,
@@ -39,6 +40,7 @@ struct Event {
     u32 fan_duty;
     u16 fan_rpm;
     f32 temperature;
+    f32 target_temperature;
     f32 humidity;
     u16 code;
     NECScanCode scan_code;

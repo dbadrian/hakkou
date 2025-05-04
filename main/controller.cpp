@@ -40,6 +40,12 @@ CallbackResponse Controller::gui_event_cb(const Event event) {
   return CallbackResponse::Continue;
 }
 
+CallbackResponse Controller::set_target_temp_cb(const Event event) {
+  const std::scoped_lock lock(state_mtx_);
+  temp_setpoint_ = event.target_temperature;
+  return CallbackResponse::Continue;
+}
+
 void Controller::handle_abort_screen_events(GUIEvent event) {
   auto leave_screen = [this]() {
     // switch screens and reset the respective state

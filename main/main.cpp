@@ -215,11 +215,10 @@ extern "C" void app_main(void) {
 
   wifi_initialize();
   init_ble();
-  // rest_initialize();
   // setup_hardware_debug();
 
   TaskHandle_t xHandle = NULL;
-  xTaskCreate(task_manager, "TaskManager", 2048, nullptr, 20, &xHandle);
+  xTaskCreate(task_manager, "TaskManager", 4096, nullptr, 20, &xHandle);
   platform_sleep(2000);
 
   // auto ctrl = new Controller();

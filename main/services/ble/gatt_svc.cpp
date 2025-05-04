@@ -8,15 +8,17 @@
 #include "common.h"
 #include "gap.h"
 
+#include "event.h"
+
 /* Private function declarations */
 static int heart_rate_chr_access(uint16_t conn_handle,
                                  uint16_t attr_handle,
                                  struct ble_gatt_access_ctxt* ctxt,
                                  void* arg);
-static int led_chr_access(uint16_t conn_handle,
-                          uint16_t attr_handle,
-                          struct ble_gatt_access_ctxt* ctxt,
-                          void* arg);
+static int set_target_temp_access(uint16_t conn_handle,
+                                  uint16_t attr_handle,
+                                  struct ble_gatt_access_ctxt* ctxt,
+                                  void* arg);
 
 /* Private variables */
 /* Heart rate service */
@@ -31,55 +33,79 @@ static bool heart_rate_chr_conn_handle_inited = false;
 static bool heart_rate_ind_status = false;
 
 /* Automation IO service */
-// static const ble_uuid16_t auto_io_svc_uuid = BLE_UUID16_INIT(0x1815);
-static uint16_t led_chr_val_handle;
-// static const ble_uuid128_t led_chr_uuid = BLE_UUID128_INIT(0x23,
-//                                                            0xd1,
-//                                                            0xbc,
-//                                                            0xea,
-//                                                            0x5f,
-//                                                            0x78,
-//                                                            0x23,
-//                                                            0x15,
-//                                                            0xde,
-//                                                            0xef,
-//                                                            0x12,
-//                                                            0x12,
-//                                                            0x25,
-//                                                            0x15,
-//                                                            0x00,
-//                                                            0x00);
+static const ble_uuid128_t temp_hmd_svc_uuid = BLE_UUID128_INIT(0xca,
+                                                                0xb9,
+                                                                0xe7,
+                                                                0x83,
+                                                                0x07,
+                                                                0x0f,
+                                                                0x43,
+                                                                0x7f,
+                                                                0x84,
+                                                                0x4d,
+                                                                0xef,
+                                                                0x19,
+                                                                0x82,
+                                                                0x12,
+                                                                0x9c,
+                                                                0x59);
+static uint16_t curent_ambient_target_temp_handle;
+static const ble_uuid128_t current_ambient_temp_uuid = BLE_UUID128_INIT(0xca,
+                                                                        0xb9,
+                                                                        0xe7,
+                                                                        0x84,
+                                                                        0x07,
+                                                                        0x0f,
+                                                                        0x43,
+                                                                        0x7f,
+                                                                        0x84,
+                                                                        0x4d,
+                                                                        0xef,
+                                                                        0x19,
+                                                                        0x82,
+                                                                        0x12,
+                                                                        0x9c,
+                                                                        0x59);
+
+static uint16_t set_target_temp_handle;
+static const ble_uuid128_t set_target_temp_uuid = BLE_UUID128_INIT(0xca,
+                                                                   0xb9,
+                                                                   0xe7,
+                                                                   0x85,
+                                                                   0x07,
+                                                                   0x0f,
+                                                                   0x43,
+                                                                   0x7f,
+                                                                   0x84,
+                                                                   0x4d,
+                                                                   0xef,
+                                                                   0x19,
+                                                                   0x82,
+                                                                   0x12,
+                                                                   0x9c,
+                                                                   0x59);
 
 /* GATT services table */
 static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
-    // /* Heart rate service */
-    // {.type = BLE_GATT_SVC_TYPE_PRIMARY,
-    //  .uuid = &heart_rate_svc_uuid.u,
-    //  .characteristics =
-    //      (struct ble_gatt_chr_def[]){
-    //          {/* Heart rate characteristic */
-    //           .uuid = &heart_rate_chr_uuid.u,
-    //           .access_cb = heart_rate_chr_access,
-    //           .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_INDICATE |
-    //                    BLE_GATT_CHR_F_READ_ENC,
-    //           .val_handle = &heart_rate_chr_val_handle},
-    //          {
-    //              0, /* No more characteristics in this service. */
-    //          }}},
-
-    // /* Automation IO service */
-    // {
-    //     .type = BLE_GATT_SVC_TYPE_PRIMARY,
-    //     .uuid = &auto_io_svc_uuid.u,
-    //     .characteristics =
-    //         (struct ble_gatt_chr_def[]){
-    //             /* LED characteristic */
-    //             {.uuid = &led_chr_uuid.u,
-    //              .access_cb = led_chr_access,
-    //              .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_WRITE_ENC,
-    //              .val_handle = &led_chr_val_handle},
-    //             {0}},
-    // },
+    /* target temperature and current temperature / humdity */
+    {
+        .type = BLE_GATT_SVC_TYPE_PRIMARY,
+        .uuid = &temp_hmd_svc_uuid.u,
+        .characteristics =
+            (struct ble_gatt_chr_def[]){
+                // {/* current temp access */
+                //  .uuid = &current_ambient_temp_uuid.u,
+                //  .access_cb = heart_rate_chr_access,
+                //  .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_INDICATE |
+                //           BLE_GATT_CHR_F_READ_ENC,
+                //  .val_handle = &curent_ambient_target_temp_handle},
+                /* set target temp access */
+                {.uuid = &set_target_temp_uuid.u,
+                 .access_cb = set_target_temp_access,
+                 .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_WRITE_ENC,
+                 .val_handle = &set_target_temp_handle},
+                {0}},
+    },
 
     {
         0, /* No more services. */
@@ -101,9 +127,6 @@ static int heart_rate_chr_access(uint16_t conn_handle,
     case BLE_GATT_ACCESS_OP_READ_CHR:
       /* Verify connection handle */
       if (conn_handle != BLE_HS_CONN_HANDLE_NONE) {
-        ESP_LOGI(TAG, "characteristic read; conn_handle=%d attr_handle=%d",
-                 conn_handle, attr_handle);
-      } else {
         ESP_LOGI(TAG, "characteristic read by nimble stack; attr_handle=%d",
                  attr_handle);
       }
@@ -131,15 +154,15 @@ error:
   return BLE_ATT_ERR_UNLIKELY;
 }
 
-static int led_chr_access(uint16_t conn_handle,
-                          uint16_t attr_handle,
-                          struct ble_gatt_access_ctxt* ctxt,
-                          void* arg) {
+static int set_target_temp_access(uint16_t conn_handle,
+                                  uint16_t attr_handle,
+                                  struct ble_gatt_access_ctxt* ctxt,
+                                  void* arg) {
   /* Local variables */
   int rc;
 
   /* Handle access events */
-  /* Note: LED characteristic is write only */
+  /* Note: set target temperature is write only */
   switch (ctxt->op) {
     /* Write characteristic event */
     case BLE_GATT_ACCESS_OP_WRITE_CHR:
@@ -153,17 +176,13 @@ static int led_chr_access(uint16_t conn_handle,
       }
 
       /* Verify attribute handle */
-      if (attr_handle == led_chr_val_handle) {
+      if (attr_handle == set_target_temp_handle) {
         /* Verify access buffer length */
-        if (ctxt->om->om_len == 1) {
-          /* Turn the LED on or off according to the operation bit */
-          if (ctxt->om->om_data[0]) {
-            // led_on();
-            ESP_LOGI(TAG, "led turned on!");
-          } else {
-            // led_off();
-            ESP_LOGI(TAG, "led turned off!");
-          }
+        if (ctxt->om->om_len == sizeof(float)) {
+          float target_temp = *reinterpret_cast<float*>(ctxt->om->om_data);
+          ESP_LOGI(TAG, "got value %f\n", target_temp);
+          hakkou::event_post({.event_type = hakkou::EventType::TargetTemperature,
+                      .target_temperature = target_temp});
         } else {
           goto error;
         }
