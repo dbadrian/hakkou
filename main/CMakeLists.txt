@@ -14,6 +14,7 @@ idf_component_register(
         "hardware/heater.cpp"
         "services/ble/gap.cpp"
         "services/ble/gatt_svc.cpp"
+        "services/http_server.cpp"
         #####
         # "preferences.cpp"
 

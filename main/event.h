@@ -24,6 +24,7 @@ enum class EventType : u16 {
   ScreenUpdate,
   IRCode,
   GUI,
+  WIFI,
   //
   NUM_EVENTS,
 };
@@ -44,6 +45,8 @@ struct Event {
     GUIEvent gui_event;
     // 4 * 21 = 84 bytes
     ScreenData screen_data;
+    // map freertos wifi events to custom
+    WifiEvent wifi_event;
     // provide a default value for the variant types
     SystemEvent system_event = SystemEventNOP{};
   };

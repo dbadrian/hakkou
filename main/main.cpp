@@ -19,10 +19,13 @@
 #include "task_manager.h"
 
 #include "services/ble/ble.h"
-#include "services/rest.h"
+#include "services/http_server.h"
+// #include "services/rest.h"
 #include "services/wifi.h"
 //////////
 
+#include "esp_chip_info.h"    // TODO DELETE
+#include "esp_http_server.h"  // TODO DELETE
 #include "esp_log.h"
 
 #include "freertos/FreeRTOS.h"
@@ -33,8 +36,21 @@
 
 using namespace hakkou;
 
-
-
+/* Simple handler for getting system handler */
+static esp_err_t system_info_get_handler(httpd_req_t* req) {
+  httpd_resp_set_type(req, "application/json");
+  // cJSON* root = cJSON_CreateObject();
+  // esp_chip_info_t chip_info;
+  // esp_chip_info(&chip_info);
+  // cJSON_AddStringToObject(root, "version", IDF_VER);
+  // cJSON_AddNumberToObject(root, "cores", chip_info.cores);
+  // const char* sys_info = cJSON_Print(root);
+  const char* sys = "{\"as\": 2}";
+  httpd_resp_sendstr(req, sys);
+  // free((void*)sys_info);
+  // cJSON_Delete(root);
+  return ESP_OK;
+}
 
 /* Library function declarations */
 
@@ -136,8 +152,6 @@ void init_ble(void) {
   xTaskCreate(nimble_host_task, "NimBLE Host", 4 * 1024, NULL, 5, NULL);
 }
 
-
-
 void setup_hardware() {
   // temporary bring up routine
   LCD* lcd = new LCD();
@@ -192,9 +206,16 @@ extern "C" void app_main(void) {
   }
 
   // bring up wifi
+  http_server_init();
+
+  ESP_ERROR_CHECK(http_server_register_uri_handler({.uri = "/api/v1/system/info",
+    .method = HTTP_GET,
+    .handler = system_info_get_handler,
+    .user_ctx = nullptr}));
+
   wifi_initialize();
   init_ble();
-  rest_initialize();
+  // rest_initialize();
   // setup_hardware_debug();
 
   TaskHandle_t xHandle = NULL;

@@ -30,8 +30,13 @@ enum GUIEvent : u16 {
   RIGHT,
 };
 
-using TimeString = std::array<char, 8>;
+enum class WifiEvent : u8 {
+  CONNECTING,
+  CONNECTED,
+  DISCONNECTED,
+};
 
+using TimeString = std::array<char, 8>;
 
 enum class SystemErrors {
   OUT_OF_MEMORY,
