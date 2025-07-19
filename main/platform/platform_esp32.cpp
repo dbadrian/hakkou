@@ -63,6 +63,7 @@ PlatformState plat_state;
 
 }  // namespace
 
+
 void logging_initialize_platform(LogLevel level) {
   // set logging level globally (for all tags)
   esp_log_level_set("*", MAP_LOG_LEVELS[static_cast<std::size_t>(level)]);
@@ -73,10 +74,10 @@ void platform_log(LogLevel level, std::string_view message, va_list args) {
                                   "1;32", "1;34", "1;30"};
   const char* log_level_string[] = {"[FATAL]", "[ERROR]", "[WARN ]",
                                     "[INFO ]", "[DEBUG]", "[TRACE]"};
-  std::printf("\033[%sm%s: ", colour_strings[static_cast<u8>(level)],
-              log_level_string[static_cast<u8>(level)]);
-  std::vprintf(message.data(), args);
-  std::printf("\033[0m\n");
+  // ESP_LOGI("ssdfd", "\033[mfsdfds"); //%s: ", colour_strings[static_cast<u8>(level)], log_level_string[static_cast<u8>(level)]);
+  platform_vprintf(message.data(), args);
+  // ESP_LOGI("ssdfd", "\033[0m\n");
+
 
   if (level == LogLevel::FATAL) {
     abort();

@@ -10,6 +10,76 @@
 #include <optional>
 #include <string_view>
 
+
+
+
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>           // for close()
+#include <esp_wifi.h>
+#include <esp_event.h>
+#include <esp_log.h>
+#include <esp_system.h>
+#include <esp_netif.h>
+#include <nvs_flash.h>
+#include <esp_vfs.h>
+#include <esp_vfs_dev.h>
+#include <esp_log_internal.h>
+
+static int client_sock = -1;
+
+static int platform_vprintf(const char* fmt, va_list args) {
+  char buf[256];
+  int len = vsnprintf(buf, sizeof(buf), fmt, args);
+  if (client_sock >= 0) {
+    send(client_sock, buf, len, 0);
+  }
+  return vprintf(fmt, args);
+}
+
+static void platform_printf(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    platform_vprintf(format, args);
+    va_end(args);
+}
+
+#define PORT 9000
+
+static void log_server_task(void* arg) {
+  struct sockaddr_in server_addr, client_addr;
+  socklen_t addr_len = sizeof(client_addr);
+
+  int listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+  memset(&server_addr, 0, sizeof(server_addr));
+  server_addr.sin_family = AF_INET;
+  server_addr.sin_port = htons(PORT);
+  server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+  bind(listen_sock, (struct sockaddr*)&server_addr, sizeof(server_addr));
+  listen(listen_sock, 1);
+
+  while (1) {
+    client_sock =
+        accept(listen_sock, (struct sockaddr*)&client_addr, &addr_len);
+    // ESP_LOGI(TAG, "Client connected");
+
+    while (1) {
+      char tmp[32];
+      int len = recv(client_sock, tmp, sizeof(tmp), 0);
+      if (len <= 0)
+        break;
+    }
+
+    // ESP_LOGI(TAG, "Client disconnected");
+    close(client_sock);
+    client_sock = -1;
+  }
+}
+
+
+
 namespace hakkou {
 
 void platform_log(LogLevel level, std::string_view message, va_list args);

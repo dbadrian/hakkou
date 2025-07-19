@@ -18,19 +18,33 @@ idf_component_register(
         #####
         # "preferences.cpp"
 
-        PRIV_REQUIRES nvs_flash bmp280 onewire ds18x20 hd44780 pcf8574 json esp_http_server spiffs esp_wifi bt
+    PRIV_REQUIRES
+        nvs_flash
+        bmp280
+        onewire
+        ds18x20
+        hd44780
+        pcf8574
+        json
+        esp_http_server
+        spiffs
+        esp_wifi
+        bt
+        esp_system
+        app_update # ota
+        mbedtls # for hashing 
 
     INCLUDE_DIRS "."
 )
 
-set(WEB_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../www/")
-if(EXISTS ${WEB_SRC_DIR})
-    spiffs_create_partition_image(www ${WEB_SRC_DIR} FLASH_IN_PROJECT)
-    message(STATUS "COPIED WEB DATA!!!!!")
+# set(WEB_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../www/")
+# if(EXISTS ${WEB_SRC_DIR})
+#     spiffs_create_partition_image(www ${WEB_SRC_DIR} FLASH_IN_PROJECT)
+#     message(STATUS "COPIED WEB DATA!!!!!")
 
-else()
-    message(FATAL_ERROR "${WEB_SRC_DIR}/dist doesn't exit.")
-endif()
+# else()
+#     message(FATAL_ERROR "${WEB_SRC_DIR}/dist doesn't exit.")
+# endif()
 
 idf_build_set_property(COMPILE_OPTIONS "-O2" APPEND)
 

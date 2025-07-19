@@ -110,7 +110,7 @@ void task_manager(void*) {
 
     ptr = buf;
     for (x = 0; x < num_tasks + 10; x++) {
-      printf("%s", ptr);
+      platform_printf("%s", ptr);
       ptr = ptr + line_length;
     }
 

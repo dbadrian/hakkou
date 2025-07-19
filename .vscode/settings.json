@@ -75,7 +75,21 @@
     "valarray": "cpp",
     "variant": "cpp",
     "vector": "cpp",
-    "algorithm": "cpp"
+    "algorithm": "cpp",
+    "chrono": "cpp",
+    "concepts": "cpp",
+    "exception": "cpp",
+    "functional": "cpp",
+    "iterator": "cpp",
+    "memory_resource": "cpp",
+    "random": "cpp",
+    "tuple": "cpp",
+    "utility": "cpp",
+    "format": "cpp",
+    "ostream": "cpp",
+    "stop_token": "cpp",
+    "thread": "cpp",
+    "cinttypes": "cpp"
   },
   "idf.flashType": "UART",
   "idf.port": "/dev/ttyUSB0"

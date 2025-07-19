@@ -181,6 +181,181 @@ void setup_hardware_debug() {
   // todo: create a fake food/amb temp setup
 }
 
+#define OTA_PORT 8050
+#define BUF_SIZE 1024
+#define HASH_SIZE 32
+
+// static const char *TAG = "OTA_SERVER";
+
+// #include "esp_system.h"
+#include "esp_ota_ops.h"
+// #include "esp_wifi.h"
+// #include "esp_event.h"
+// #include "nvs_flash.h"
+// #include "esp_netif.h"
+#include "lwip/sockets.h"
+#include "mbedtls/md.h"
+
+static constexpr char MAGIC_HEADER[] = "HakkouOTA!!!";
+
+struct OTAHeader {
+  char magic[sizeof(MAGIC_HEADER)];  // e.g., 'OTAv'
+  uint32_t firmware_len;
+  uint8_t sha256[32];
+
+  bool is_valid() const {
+    printf("header magic: %s instead of %s\n", magic, MAGIC_HEADER);
+    return std::strncmp(magic, MAGIC_HEADER, sizeof(MAGIC_HEADER)) == 0;
+  }
+};
+
+void ota_server_task(void* pvParameter) {
+  int listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+  if (listen_sock < 0) {
+    ESP_LOGE(TAG, "Socket creation failed");
+    vTaskDelete(nullptr);
+    return;
+  }
+
+  sockaddr_in server_addr{.sin_family = AF_INET,
+                          .sin_port = htons(OTA_PORT),
+                          .sin_addr = {htonl(INADDR_ANY)}};
+
+  if (bind(listen_sock, reinterpret_cast<sockaddr*>(&server_addr),
+           sizeof(server_addr)) != 0) {
+    ESP_LOGE(TAG, "Socket bind failed");
+    close(listen_sock);
+    vTaskDelete(nullptr);
+    return;
+  }
+
+  if (listen(listen_sock, 1) != 0) {
+    ESP_LOGE(TAG, "Socket listen failed");
+    close(listen_sock);
+    vTaskDelete(nullptr);
+    return;
+  }
+
+  ESP_LOGI(TAG, "Waiting for OTA connection on port %d...", OTA_PORT);
+
+  sockaddr_in client_addr;
+  socklen_t addr_len = sizeof(client_addr);
+  int client_sock =
+      accept(listen_sock, reinterpret_cast<sockaddr*>(&client_addr), &addr_len);
+  if (client_sock < 0) {
+    ESP_LOGE(TAG, "Accept failed");
+    close(listen_sock);
+    vTaskDelete(nullptr);
+    return;
+  }
+
+  ESP_LOGI(TAG, "Client connected");
+
+  OTAHeader header{};
+  int header_received = 0;
+  while (header_received < sizeof(header)) {
+    int ret =
+        recv(client_sock, reinterpret_cast<char*>(&header) + header_received,
+             sizeof(header) - header_received, 0);
+    if (ret <= 0) {
+      ESP_LOGE(TAG, "Header receive failed");
+      close(client_sock);
+      close(listen_sock);
+      vTaskDelete(nullptr);
+      return;
+    }
+    header_received += ret;
+  }
+
+  if (!header.is_valid()) {
+    ESP_LOGE(TAG, "Invalid OTA magic header");
+    close(client_sock);
+    close(listen_sock);
+    vTaskDelete(nullptr);
+    return;
+  }
+
+  ESP_LOGI(TAG, "OTA Header OK. Receiving %lu bytes...", header.firmware_len);
+
+  const esp_partition_t* update_partition =
+      esp_ota_get_next_update_partition(nullptr);
+  if (!update_partition) {
+    ESP_LOGE(TAG, "No OTA partition found");
+    close(client_sock);
+    close(listen_sock);
+    vTaskDelete(nullptr);
+    return;
+  }
+
+  esp_ota_handle_t ota_handle;
+  esp_err_t err =
+      esp_ota_begin(update_partition, OTA_SIZE_UNKNOWN, &ota_handle);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "esp_ota_begin failed: %s", esp_err_to_name(err));
+    close(client_sock);
+    close(listen_sock);
+    vTaskDelete(nullptr);
+    return;
+  }
+
+  std::array<uint8_t, BUF_SIZE> buffer{};
+  uint32_t total_received = 0;
+
+  while (total_received < header.firmware_len) {
+    int chunk = recv(
+        client_sock, buffer.data(),
+        std::min(static_cast<size_t>(BUF_SIZE),
+                 static_cast<size_t>(header.firmware_len - total_received)),
+        0);
+    if (chunk <= 0) {
+      ESP_LOGE(TAG, "Firmware receive failed");
+      esp_ota_abort(ota_handle);
+      close(client_sock);
+      close(listen_sock);
+      vTaskDelete(nullptr);
+      return;
+    }
+
+    err = esp_ota_write(ota_handle, buffer.data(), chunk);
+    if (err != ESP_OK) {
+      ESP_LOGE(TAG, "esp_ota_write failed: %s", esp_err_to_name(err));
+      esp_ota_abort(ota_handle);
+      close(client_sock);
+      close(listen_sock);
+      vTaskDelete(nullptr);
+      return;
+    }
+
+    total_received += chunk;
+  }
+
+  ESP_LOGI(TAG, "OTA transfer complete: %lu bytes", total_received);
+
+  err = esp_ota_end(ota_handle);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "esp_ota_end failed: %s", esp_err_to_name(err));
+    close(client_sock);
+    close(listen_sock);
+    vTaskDelete(nullptr);
+    return;
+  }
+
+  err = esp_ota_set_boot_partition(update_partition);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "esp_ota_set_boot_partition failed: %s",
+             esp_err_to_name(err));
+    close(client_sock);
+    close(listen_sock);
+    vTaskDelete(nullptr);
+    return;
+  }
+
+  ESP_LOGI(TAG, "OTA update successful. Rebooting...");
+  close(client_sock);
+  close(listen_sock);
+  esp_restart();
+}
+
 extern "C" void app_main(void) {
   // Handle any unexpected software restarts from before
   // We use this to ensure a sane state of the system
@@ -208,18 +383,27 @@ extern "C" void app_main(void) {
   // bring up wifi
   http_server_init();
 
-  ESP_ERROR_CHECK(http_server_register_uri_handler({.uri = "/api/v1/system/info",
-    .method = HTTP_GET,
-    .handler = system_info_get_handler,
-    .user_ctx = nullptr}));
+  ESP_ERROR_CHECK(
+      http_server_register_uri_handler({.uri = "/api/v1/system/info",
+                                        .method = HTTP_GET,
+                                        .handler = system_info_get_handler,
+                                        .user_ctx = nullptr}));
 
   wifi_initialize();
-  init_ble();
+  // init_ble();
   // setup_hardware_debug();
 
+  esp_log_set_vprintf(platform_vprintf);
+  xTaskCreate(log_server_task, "log_server", 4096, NULL, 5, NULL);
+
   TaskHandle_t xHandle = NULL;
-  xTaskCreate(task_manager, "TaskManager", 4096, nullptr, 20, &xHandle);
-  platform_sleep(2000);
+  // xTaskCreate(task_manager, "TaskManager", 4096, nullptr, 20, &xHandle);
+
+  xTaskCreate(ota_server_task, "ota_server_task", 8192, NULL, 5, NULL);
+
+  vTaskDelay(2000);
+
+  ESP_LOGW("MAIN", "RUNNING v0.0.4");
 
   // auto ctrl = new Controller();
   // // wait for sensors to initialzie...
