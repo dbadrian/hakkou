@@ -397,9 +397,9 @@ extern "C" void app_main(void) {
   xTaskCreate(log_server_task, "log_server", 4096, NULL, 5, NULL);
 
   TaskHandle_t xHandle = NULL;
-  // xTaskCreate(task_manager, "TaskManager", 4096, nullptr, 20, &xHandle);
+  xTaskCreate(task_manager, "TaskManager", 4096, nullptr, 20, &xHandle);
 
-  xTaskCreate(ota_server_task, "ota_server_task", 8192, NULL, 5, NULL);
+  // xTaskCreate(ota_server_task, "ota_server_task", 8192, NULL, 5, NULL);
 
   vTaskDelay(2000);
 
