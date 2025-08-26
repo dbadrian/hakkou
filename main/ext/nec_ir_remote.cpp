@@ -170,14 +170,14 @@ esp_err_t rmt_new_ir_nec_encoder(const ir_nec_encoder_config_t* config,
   // construct the leading code and ending code with RMT symbol format
   nec_encoder->nec_leading_symbol = (rmt_symbol_word_t){
       .duration0 =
-          static_cast<unsigned int>(9000ULL * config->resolution / 1000000),
+          static_cast<short unsigned int>(9000ULL * config->resolution / 1000000),
       .level0 = 1,
       .duration1 =
-          static_cast<unsigned int>(4500ULL * config->resolution / 1000000),
+          static_cast<short unsigned int>(4500ULL * config->resolution / 1000000),
       .level1 = 0,
   };
   nec_encoder->nec_ending_symbol = (rmt_symbol_word_t){
-      .duration0 = 560 * config->resolution / 1000000,
+      .duration0 = static_cast<short unsigned int>(560 * config->resolution / 1000000),
       .level0 = 1,
       .duration1 = 0x7FFF,
       .level1 = 0,
@@ -186,16 +186,16 @@ esp_err_t rmt_new_ir_nec_encoder(const ir_nec_encoder_config_t* config,
   rmt_bytes_encoder_config_t bytes_encoder_config = {
       .bit0 =
           {
-              .duration0 = 560 * config->resolution / 1000000,  // T0H=560us
+              .duration0 = static_cast<short unsigned int>(560 * config->resolution / 1000000),  // T0H=560us
               .level0 = 1,
-              .duration1 = 560 * config->resolution / 1000000,  // T0L=560us
+              .duration1 = static_cast<short unsigned int>(560 * config->resolution / 1000000),  // T0L=560us
               .level1 = 0,
           },
       .bit1 =
           {
-              .duration0 = 560 * config->resolution / 1000000,  // T1H=560us
+              .duration0 = static_cast<short unsigned int>(560 * config->resolution / 1000000),  // T1H=560us
               .level0 = 1,
-              .duration1 = 1690 * config->resolution / 1000000,  // T1L=1690us
+              .duration1 = static_cast<short unsigned int>(1690 * config->resolution / 1000000),  // T1L=1690us
               .level1 = 0,
           },
   };

@@ -48,7 +48,7 @@ class Controller {
   // Task related
   constexpr static uint32_t STACK_SIZE = 2 * 2048;
   constexpr static UBaseType_t PRIORITY = 15;
-  constexpr static u64 UPDATE_RATE_MS = 100;
+  constexpr static u64 UPDATE_RATE_MS = 1000;
 
   // GUI Queue
   constexpr static u8 GUI_QUEUE_LENGTH = 1;
