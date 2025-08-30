@@ -17,7 +17,7 @@ namespace hakkou {
 
 class DS18X20 {
  public:
-  constexpr static u32 STACK_SIZE = 2304;
+  constexpr static u32 STACK_SIZE = 4192;
   constexpr static UBaseType_t PRIORITY = 9;  // TODO Set priority elsewhere
 
   constexpr static std::size_t MAX_DEVICES = 10;

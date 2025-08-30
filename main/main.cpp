@@ -27,6 +27,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include <rom/ets_sys.h> // us delay
 
 using namespace hakkou;
 
@@ -66,16 +67,25 @@ void setup_hardware_debug() {
   // todo: create a fake food/amb temp setup
 }
 
+
+
 extern "C" void app_main(void) {
   // Handle any unexpected software restarts from before
   // We use this to ensure a sane state of the system
   // E.g., important GPIO to be in a known safe state.
   // TODO: handle restart
 
+
   // First get important hardware things setup
   platform_initialize({
       .interrupts_enabled = true,
       .i2c_enabled = true,
+  });
+
+  gpio_configure({
+    .pin = 4,
+    .direction = GPIODirection::OUTPUT,
+    .pull_mode = GPIOPullMode::UP,
   });
 
   // Initialize various subsystems
@@ -96,7 +106,7 @@ extern "C" void app_main(void) {
   setup_hardware();
 
   TaskHandle_t xHandle = NULL;
-  xTaskCreate(task_manager, "TaskManager", 2048, nullptr, 20, &xHandle);
+  xTaskCreate(task_manager, "TaskManager", 4192, nullptr, 20, &xHandle);
   platform_sleep(2000);
 
   // auto ctrl = new Controller();

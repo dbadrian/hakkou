@@ -7,9 +7,18 @@
 #include "hardware/pid.h"
 #include "platform/platform.h"
 
+#include "driver/gpio.h"
+
 #include <mutex>
 
 namespace hakkou {
+
+static void toggle_gpio(u16 pin, u32 ms) {
+  gpio_set_level((gpio_num_t)pin, 1);
+  platform_sleep(ms);
+  gpio_set_level((gpio_num_t)pin, 0);
+  platform_sleep(ms);
+}
 
 struct SensorStates {
   HMutex mtx;
@@ -48,14 +57,16 @@ class Controller {
   // Task related
   constexpr static uint32_t STACK_SIZE = 2 * 2048;
   constexpr static UBaseType_t PRIORITY = 15;
-  constexpr static u64 UPDATE_RATE_MS = 1000;
+  constexpr static u64 UPDATE_RATE_MS = 100;
+  constexpr static u64 UPDATE_RATE_PID_MS = 2000;
+  constexpr static float HMD_WINDOW = 0.5;
 
   // GUI Queue
   constexpr static u8 GUI_QUEUE_LENGTH = 1;
 
   // Default values
   constexpr static float DEFAULT_TEMP_SETPOINT = 21;
-  constexpr static float DEFAULT_HMD_SETPOINT = 50;
+  constexpr static float DEFAULT_HMD_SETPOINT = 70;
 
   Controller()
       : hmd_handle_(event_register(EventType::HumidityAmbient,
@@ -154,6 +165,9 @@ class Controller {
     active_screen_ = &progress_screen_;
 
     u32 time_;
+    float time_pid_last_update;
+    time_pid_last_update = timer_u32();
+
     while (running) {
       time_ = timer_u32();
       // TODO 1. check if errors occurred?
@@ -179,20 +193,42 @@ class Controller {
       // latest (adjusted) temperature, putting it to the PID
       // and then publishing it
       state_mtx_.lock();
+
       auto [temp_ctrl, food_is_control] =
           get_control_temperature(temp_setpoint_);
-      temp_pid_duty = temperature_pid_.update(temp_setpoint_, temp_ctrl);
-      state_mtx_.unlock();
+      if (timer_delta_ms(timer_u32() - time_pid_last_update) >
+          UPDATE_RATE_PID_MS) {
+        HWARN("GOT above limit");
+        temp_pid_duty = temperature_pid_.update(temp_setpoint_, temp_ctrl);
+        time_pid_last_update = timer_u32();
+        event_post({.event_type = EventType::FanDuty, .fan_duty = 100});
+        event_post({.event_type = EventType::HeaterDuty,
+                    .heater_duty = temp_pid_duty});
+        // HDEBUG("TEMP_PID: setpoint='%f' measured='%f' duty='%lu'",
+        // temp_setpoint_,
+        //        temp_ctrl, temp_pid_duty);
 
-      // HDEBUG("TEMP_PID: setpoint='%f' measured='%f' duty='%lu'",
-      // temp_setpoint_,
-      //        temp_ctrl, temp_pid_duty);
-      event_post({.event_type = EventType::FanDuty, .fan_duty = 100});
-      event_post(
-          {.event_type = EventType::HeaterDuty, .heater_duty = temp_pid_duty});
-
+        // bang bang controller for humidty with minimal hystersis
+        // if current > setpoint + w: switch off
+        // if current < setpoint - w: switch off
+        if (sensor_states_.amb_humidity > hmd_setpoint_) {
+          HWARN("Switching hmd off! %f %f %f", sensor_states_.amb_humidity,
+                hmd_setpoint_, HMD_WINDOW);
+          if (humidifier_state_) {
+            toggle_gpio(4, 200);  // switching on
+            toggle_gpio(4, 200);  // switching next mode
+            humidifier_state_ = !humidifier_state_;
+          }
+        } else if (sensor_states_.amb_humidity < hmd_setpoint_ - HMD_WINDOW) {
+          HWARN("Switching hmd on!  %f %f %f", sensor_states_.amb_humidity,
+                hmd_setpoint_, HMD_WINDOW);
+          if (!humidifier_state_) {
+            toggle_gpio(4, 200);  // switching off
+            humidifier_state_ = !humidifier_state_;
+          }
+        }
+      }
       // TODO: Humidity: Not implemented!
-
       progress_screen_.update(
           sensor_states_.amb_temperature,  /* float amb_temp*/
           sensor_states_.amb_humidity,     /* float amb_hmd*/
@@ -204,6 +240,7 @@ class Controller {
           std::nullopt
           // program::total_run_time(prgm) * 60 /* uint32_t total_time*/
       );
+      state_mtx_.unlock();
 
       // Update and show whatever screen is currently showing
       {
@@ -237,8 +274,8 @@ class Controller {
   }
 
   [[nodiscard]] std::pair<float, bool> get_control_temperature(float setpoint) {
-    // If ambient temperature is HIGHER THAN food temperature, assume ambient as
-    // control signal. This will ensure we wont drastically overheat the
+    // If ambient temperature is HIGHER THAN food temperature, assume ambient
+    // as control signal. This will ensure we wont drastically overheat the
     // container if the food mass is slow to heat up
     if (sensor_states_.amb_temperature > sensor_states_.food_temperature) {
       return {sensor_states_.amb_temperature, false};
@@ -267,6 +304,7 @@ class Controller {
   PID temperature_pid_;
   float temp_setpoint_{DEFAULT_TEMP_SETPOINT};
   float hmd_setpoint_{DEFAULT_HMD_SETPOINT};
+  bool humidifier_state_ = false;
 
   // single mtx for measurements is enough
   // since the event loop will only process one
