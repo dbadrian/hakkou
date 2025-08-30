@@ -24,6 +24,7 @@ enum class EventType : u16 {
   ScreenUpdate,
   IRCode,
   GUI,
+  RotaryEncoder,
   //
   NUM_EVENTS,
 };
@@ -42,6 +43,7 @@ struct Event {
     u16 code;
     NECScanCode scan_code;
     GUIEvent gui_event;
+    RotaryEncoderEvent rotary_event;
     // 4 * 21 = 84 bytes
     ScreenData screen_data;
     // provide a default value for the variant types

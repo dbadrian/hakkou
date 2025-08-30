@@ -24,28 +24,28 @@ class MainMenu {
         buffer,          /* Array to use as the task's stack. */
         &task_internal); /* Variable to hold the task's data structure. */
 
-    auto _handle = event_register(EventType::GUI, static_cast<void*>(this),
+    auto _handle = event_register(EventType::RotaryEncoder, static_cast<void*>(this),
                                  MainMenu::event_handler);
     if (!_handle) {
       HFATAL("Couldn't register MainMenu event callback!");
     }
-    gui_handle = _handle.value();
+    rot_event_handle = _handle.value();
   }
 
   ~MainMenu() {
-    event_unregister(gui_handle);
+    event_unregister(rot_event_handle);
   }
 
   static CallbackResponse event_handler(Event event, void* listener) {
     auto instance = static_cast<MainMenu*>(listener);
-    switch (event.gui_event) {
-      case GUIEvent::OK: {
+    switch (event.rotary_event) {
+      case RotaryEncoderEvent::BUTTON_CLICKED: {
         instance->queue_.send_back(Actions::OK);
       } break;
-      case GUIEvent::UP: {
+      case RotaryEncoderEvent::RIGHT: {
         instance->queue_.send_back(Actions::UP);
       } break;
-      case GUIEvent::DOWN: {
+      case RotaryEncoderEvent::LEFT: {
         instance->queue_.send_back(Actions::DOWN);
       } break;
       default:
@@ -119,7 +119,7 @@ class MainMenu {
   TaskHandle_t handle;
 
   // internal state
-  EventHandle gui_handle;
+  EventHandle rot_event_handle;
 
   Queue<Actions, 10> queue_;
 

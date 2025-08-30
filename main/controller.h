@@ -5,6 +5,7 @@
 #include "event.h"
 #include "gui.h"
 #include "hardware/pid.h"
+#include "internal_types.h"
 #include "platform/platform.h"
 
 #include "driver/gpio.h"
@@ -35,6 +36,7 @@ struct ControllerGUIState {
   // abort sceen state
   bool on_abort_screen{false};
   bool selected_cont{true};
+  bool editing{false};
 };
 
 enum class ControllerMessages : u32 {
@@ -78,7 +80,7 @@ class Controller {
         food_handle_(event_register(EventType::TemperatureFood,
                                     static_cast<void*>(this),
                                     Controller::event_callback)),
-        gui_handle_(event_register(EventType::GUI,
+        gui_handle_(event_register(EventType::RotaryEncoder,
                                    static_cast<void*>(this),
                                    Controller::event_callback)),
         temperature_pid_(PIDConfig{
@@ -125,8 +127,8 @@ class Controller {
       case EventType::HumidityAmbient: {
         return instance->ambient_hmd_cb(event);
       } break;
-      case EventType::GUI: {
-        return instance->gui_event_cb(event);
+      case EventType::RotaryEncoder: {
+        return instance->rotary_event_cb(event);
       } break;
       default:
         return CallbackResponse::Continue;
@@ -148,7 +150,7 @@ class Controller {
   CallbackResponse food_temp_event_cb(const Event event);
   CallbackResponse ambient_temp_event_cb(const Event event);
   CallbackResponse ambient_hmd_cb(const Event event);
-  CallbackResponse gui_event_cb(const Event event);
+  CallbackResponse rotary_event_cb(const Event event);
 
   static void initialize(void* cls) {
     static_cast<Controller*>(cls)->run_manual();
@@ -161,7 +163,7 @@ class Controller {
 
     u32 temp_pid_duty = 0;
 
-    GUIEvent gui_event;
+    RotaryEncoderEvent gui_event;
     active_screen_ = &progress_screen_;
 
     u32 time_;
@@ -173,7 +175,7 @@ class Controller {
       // TODO 1. check if errors occurred?
 
       // Process any available GUI event (no wait)
-      while (xQueueReceive(gui_event_queue_.handle,
+      while (xQueueReceive(rotary_event_queue.handle,
                            static_cast<void*>(&gui_event), 0) == pdTRUE) {
         // only update the content of the screens
         // actual update event will be sent later in this loop
@@ -235,7 +237,7 @@ class Controller {
           temp_setpoint_,                  /* float temp_setpoint*/
           hmd_setpoint_,                   /* float hmd_setpoint*/
           sensor_states_.food_temperature, /* float food_temp*/
-          food_is_control, gui_state_.selected_temp,
+          food_is_control, gui_state_.selected_temp, gui_state_.editing,
           time_passed_m * 60, /* uint32_t time_passed*/
           std::nullopt
           // program::total_run_time(prgm) * 60 /* uint32_t total_time*/
@@ -284,8 +286,8 @@ class Controller {
     }
   }
 
-  void handle_abort_screen_events(GUIEvent event);
-  void handle_main_screen_events(GUIEvent event);
+  void handle_abort_screen_events(RotaryEncoderEvent event);
+  void handle_main_screen_events(RotaryEncoderEvent event);
 
  private:
   bool is_initialized_{false};
@@ -317,7 +319,7 @@ class Controller {
   ControllerGUIState gui_state_;
   ProgressScreen progress_screen_;
   AbortScreen abort_screen_;
-  Queue<GUIEvent, GUI_QUEUE_LENGTH> gui_event_queue_;
+  Queue<RotaryEncoderEvent, GUI_QUEUE_LENGTH> rotary_event_queue;
 };
 
 }  // namespace hakkou
