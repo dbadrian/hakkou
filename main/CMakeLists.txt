@@ -18,7 +18,7 @@ idf_component_register(
         #####
         # "preferences.cpp"
 
-        PRIV_REQUIRES nvs_flash bmp280 onewire ds18x20 hd44780 pcf8574 json esp_http_server spiffs esp_wifi bt
+        PRIV_REQUIRES nvs_flash bmp280 onewire ds18x20 hd44780 pcf8574 json esp_http_server spiffs esp_wifi bt sht3x
 
     INCLUDE_DIRS "."
 )
