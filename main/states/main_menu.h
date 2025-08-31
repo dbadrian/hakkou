@@ -100,6 +100,12 @@ class MainMenu {
                   .system_event = SystemEventOpenSettings{},
               });
             } break;
+            case 3: {
+              event_post(Event{
+                  .event_type = EventType::System,
+                  .system_event = SystemEventOTA{},
+              });
+            } break;
           }
         } break;
         default:
@@ -123,10 +129,11 @@ class MainMenu {
 
   Queue<Actions, 10> queue_;
 
-  ScrollableListScreen<3> screen{{
+  ScrollableListScreen<4> screen{{
       "Manual Mode",
       "Programmed Mode",
       "Settings",
+      "OTA",
   }};
   // Task<4 * 1024> task_;
 };

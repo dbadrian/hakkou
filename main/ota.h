@@ -1,5 +1,7 @@
 #pragma once
 
+#include "event.h"
+#include "gui.h"
 #include "logger.h"
 
 // TODO: Move defines to global defiens
@@ -39,6 +41,11 @@ void ota_server_task(void* context) {
   /*
       This tasks listens for the upload of an OTA firmware.
   */
+  OTAScreen screen;
+
+  event_post(Event{.event_type = EventType::ScreenUpdate,
+                   .screen_data = screen.data()});
+
   int ret = 0;
   int listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
   // ASKA_ASSERT_MSG(listen_sock >= 0, "Socket creation failed");
@@ -125,6 +132,9 @@ void ota_server_task(void* context) {
     int bar_width = 50;
     float progress = (float)total_received / header.firmware_len;
     int pos = (int)(bar_width * progress);
+    screen.progress(progress);
+    event_post(Event{.event_type = EventType::ScreenUpdate,
+                     .screen_data = screen.data()});
 
     printf("\rReceiving Firmware: [");
     for (int i = 0; i < bar_width; i++) {

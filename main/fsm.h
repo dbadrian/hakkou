@@ -1,11 +1,16 @@
 #pragma once
 
 #include <containers.h>
-#include <controller.h>
 #include <defines.h>
 #include <event.h>
 #include <internal_types.h>
 #include <platform/platform.h>
+#include "controller.h"
+#include "hardware/fan.h"
+#include "hardware/h_ds18x20.h"
+#include "hardware/heater.h"
+#include "hardware/sht31d.h"
+#include "ota.h"
 
 // different state/routines
 #include <states/main_menu.h>
@@ -35,7 +40,7 @@ class FSMBase {
   TaskHandle_t task_handle_{nullptr};
 
  public:
-  FSMBase(){};
+  FSMBase() {};
 
   [[nodiscard]] const States& get_state() const { return state_; }
 
@@ -85,6 +90,7 @@ struct StateSettings {};
 struct StateFailure {};
 struct StateShutdown {};
 struct StateFinished {};
+struct StateOTA {};
 
 using StatesT = std::variant<std::unique_ptr<StateIdle>,
                              std::unique_ptr<StateMainMenu>,
@@ -93,6 +99,7 @@ using StatesT = std::variant<std::unique_ptr<StateIdle>,
                              std::unique_ptr<StateSettings>,
                              std::unique_ptr<StateFailure>,
                              std::unique_ptr<StateShutdown>,
+                             std::unique_ptr<StateOTA>,
                              std::unique_ptr<StateFinished>>;
 
 class MainMenuFSM : public FSMBase<MainMenuFSM, StatesT, SystemEvent> {
@@ -166,8 +173,43 @@ class MainMenuFSM : public FSMBase<MainMenuFSM, StatesT, SystemEvent> {
   auto on_event(std::unique_ptr<StateMainMenu>&,
                 const SystemEventStartManual&) {
     HDEBUG("<StateMainMenu|SystemEventStartManual|StateManualRun>\n");
+
+    Fan4W* fan = new Fan4W(CONFIG_FAN_PWM_PIN, CONFIG_FAN_TACHO_PIN);
+    event_post(
+        {.event_type = EventType::FanDuty, .sender = nullptr, .fan_duty = 30});
+    Heater* heater = new Heater(CONFIG_HEATER_PWM_PIN);
+
+    // BME280* bme = new
+    // BME280(static_cast<i2c_port_t>(CONFIG_BMP280_I2C_ADDRESS),
+    //                          static_cast<gpio_num_t>(CONFIG_I2C_SDA_PIN),
+    //                          static_cast<gpio_num_t>(CONFIG_I2C_SCL_PIN),
+    //                          2000);
+
+    SHT31D* whatever =
+        new SHT31D(static_cast<i2c_port_t>(0x44),
+                   static_cast<gpio_num_t>(CONFIG_I2C_SDA_PIN),
+                   static_cast<gpio_num_t>(CONFIG_I2C_SCL_PIN), 2000);
+
+    DS18X20* ds18x20 =
+        new DS18X20(static_cast<gpio_num_t>(CONFIG_ONEWIRE_PIN), 2000);
+
+    // GPIO for humidifier
+    gpio_configure({
+        .pin = 4,
+        .direction = GPIODirection::OUTPUT,
+        .pull_mode = GPIOPullMode::UP,
+    });
+
     auto ns = std::make_unique<StateManualRun>();
     ns->ctrl = std::make_unique<Controller>();
+    return ns;
+  }
+
+  auto on_event(std::unique_ptr<StateMainMenu>&, const SystemEventOTA&) {
+    HDEBUG("<StateMainMenu|SystemEventStartManual|StateOTA>\n");
+    auto ns = std::make_unique<StateOTA>();
+    xTaskCreate(ota_server_task, "ota_server_task", 8192, NULL, 5, NULL);
+
     return ns;
   }
 

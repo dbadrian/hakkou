@@ -8,12 +8,8 @@
 #include "platform/platform.h"
 
 ///////TODO: Temp includes
-#include "controller.h"
-#include "hardware/fan.h"
-#include "hardware/h_ds18x20.h"
-#include "hardware/heater.h"
+
 #include "hardware/lcd.h"
-#include "hardware/sht31d.h"
 
 #include <hardware/encoder.h>
 
@@ -55,39 +51,17 @@ static esp_err_t system_info_get_handler(httpd_req_t* req) {
   return ESP_OK;
 }
 
-void setup_hardware() {
+void setup_base_hardware() {
   // temporary bring up routine
   LCD* lcd = new LCD();
 
   xTaskCreate(rotary_encoder_task, "RotaryEncoder",
               configMINIMAL_STACK_SIZE * 8, NULL, 5, NULL);
+}
 
-  // Fan4W* fan = new Fan4W(CONFIG_FAN_PWM_PIN, CONFIG_FAN_TACHO_PIN);
-  // event_post(
-  //     {.event_type = EventType::FanDuty, .sender = nullptr, .fan_duty = 30});
 
-  // // BME280* bme = new
-  // // BME280(static_cast<i2c_port_t>(CONFIG_BMP280_I2C_ADDRESS),
-  // //                          static_cast<gpio_num_t>(CONFIG_I2C_SDA_PIN),
-  // //                          static_cast<gpio_num_t>(CONFIG_I2C_SCL_PIN),
-  // //                          2000);
+void setup_sensors() {
 
-  // SHT31D* whatever =
-  //     new SHT31D(static_cast<i2c_port_t>(0x44),
-  //                static_cast<gpio_num_t>(CONFIG_I2C_SDA_PIN),
-  //                static_cast<gpio_num_t>(CONFIG_I2C_SCL_PIN), 2000);
-
-  // DS18X20* ds18x20 =
-  //     new DS18X20(static_cast<gpio_num_t>(CONFIG_ONEWIRE_PIN), 2000);
-
-  // Heater* heater = new Heater(CONFIG_HEATER_PWM_PIN);
-
-  // GPIO for humidifier
-  gpio_configure({
-      .pin = 4,
-      .direction = GPIODirection::OUTPUT,
-      .pull_mode = GPIOPullMode::UP,
-  });
 }
 
 extern "C" void app_main(void) {
@@ -115,7 +89,7 @@ extern "C" void app_main(void) {
   }
 
   // depends on event system
-  setup_hardware();
+  setup_base_hardware();
 
   // bring up wifi
   http_server_init();
@@ -128,7 +102,6 @@ extern "C" void app_main(void) {
 
   wifi_initialize();
 
-  xTaskCreate(ota_server_task, "ota_server_task", 8192, NULL, 5, NULL);
 
   TaskHandle_t xHandle = NULL;
   xTaskCreate(task_manager, "TaskManager", 4192, nullptr, 20, &xHandle);

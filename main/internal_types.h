@@ -64,6 +64,7 @@ struct SystemEventStartProgram {};
 struct SystemEventOpenSettings {};
 struct SystemEventAbort {};
 struct SystemEventNOP {};
+struct SystemEventOTA{};
 
 using SystemEvent = std::variant<SystemEventError,
                                 SystemEventStart,
@@ -73,6 +74,7 @@ using SystemEvent = std::variant<SystemEventError,
                                 SystemEventStartProgram,
                                 SystemEventOpenSettings,
                                 SystemEventAbort,
+                                SystemEventOTA,
                                 SystemEventNOP>;
 
 }  // namespace hakkou

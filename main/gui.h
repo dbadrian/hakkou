@@ -69,7 +69,8 @@ class ProgressScreen : public Screen {
     HINFO("Ist editing %d", editing);
     if (food_temp) {
       sprintf(screen_buf_[0].data(), "  fT: %4.1fC [%4.1f]%c ",
-              food_temp.value(), temp_setpoint, selected_temp ? edit_or_select : ' ');
+              food_temp.value(), temp_setpoint,
+              selected_temp ? edit_or_select : ' ');
       sprintf(screen_buf_[1].data(), "  aT: %4.1fC         ", amb_temp);
     } else {
       screen_buf_[0] = {};
@@ -182,6 +183,35 @@ class ScrollableListScreen : public Screen {
   ScreenData screen_buf_ = {{{"                    "},
                              {"                    "},
                              {"                    "},
+                             {"                    "}}};
+};
+
+class OTAScreen : public Screen {
+ public:
+  const ScreenData& data() const override { return screen_buf_; }
+
+  void progress(float progress) {
+    int bar_width = 18;
+    int pos = (int)(bar_width * progress);
+
+    screen_buf_[2] = {"   ...FLASHING...   "};
+
+    screen_buf_[1][0] = '[';
+    screen_buf_[1][19] = ']';
+    for (int i = 0; i < bar_width; i++) {
+      if (i < pos)
+        screen_buf_[1][1 + i] = '=';
+      else if (i == pos)
+        screen_buf_[1][1 + i] = '>';
+      else
+        screen_buf_[1][1 + i] = ' ';
+    }
+  }
+
+ protected:
+  ScreenData screen_buf_ = {{{"                    "},
+                             {"                    "},
+                             {"    ...WAITING...   "},
                              {"                    "}}};
 };
 
