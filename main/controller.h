@@ -64,7 +64,7 @@ class Controller {
   constexpr static float HMD_WINDOW = 0.5;
 
   // GUI Queue
-  constexpr static u8 GUI_QUEUE_LENGTH = 1;
+  constexpr static u8 ROTARY_QUEUE_LENGTH = 4;
 
   // Default values
   constexpr static float DEFAULT_TEMP_SETPOINT = 21;
@@ -319,7 +319,7 @@ class Controller {
   ControllerGUIState gui_state_;
   ProgressScreen progress_screen_;
   AbortScreen abort_screen_;
-  Queue<RotaryEncoderEvent, GUI_QUEUE_LENGTH> rotary_event_queue;
+  Queue<RotaryEncoderEvent, ROTARY_QUEUE_LENGTH> rotary_event_queue;
 };
 
 }  // namespace hakkou

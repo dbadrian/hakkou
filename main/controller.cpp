@@ -53,7 +53,7 @@ void Controller::handle_abort_screen_events(RotaryEncoderEvent event) {
   };
 
   switch (event) {
-    case RotaryEncoderEvent::BUTTON_PRESSED:
+    case RotaryEncoderEvent::BUTTON_CLICKED:
       if (gui_state_.selected_cont) {
         leave_screen();
       } else {
@@ -82,9 +82,9 @@ void Controller::handle_abort_screen_events(RotaryEncoderEvent event) {
 
 void Controller::handle_main_screen_events(RotaryEncoderEvent event) {
   switch (event) {
-    case RotaryEncoderEvent::BUTTON_PRESSED:
+    case RotaryEncoderEvent::BUTTON_CLICKED: {
       gui_state_.editing = !gui_state_.editing;
-      break;
+    } break;
     case RotaryEncoderEvent::LEFT: {
       if (gui_state_.editing) {
         const std::scoped_lock lock(state_mtx_);

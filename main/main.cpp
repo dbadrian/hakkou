@@ -79,7 +79,6 @@ void rotary_encoder_task(void* arg) {
         HINFO("Looooong pressed button");
         // rotary_encoder_disable_acceleration(&re);
         event_post({.event_type = EventType::RotaryEncoder, .sender=nullptr, .rotary_event=RotaryEncoderEvent::BUTTON_LONG_PRESS});
-
         break;
       case RE_ET_CHANGED:
         if (e.diff > 0) {
