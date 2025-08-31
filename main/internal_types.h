@@ -36,6 +36,16 @@ enum class WifiEvent : u8 {
   DISCONNECTED,
 };
 
+enum class RotaryEncoderEvent : u8 {
+  LEFT,
+  RIGHT,
+  BUTTON_PRESSED,
+  BUTTON_RELEASED,
+  BUTTON_CLICKED,
+  BUTTON_LONG_PRESS
+};
+
+
 using TimeString = std::array<char, 8>;
 
 enum class SystemErrors {

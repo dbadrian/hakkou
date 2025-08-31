@@ -1,6 +1,6 @@
 > **Warning**: 
-> This project is under development and not useable. I recently started a complete re-write (this repo). The original one is not disclosed at this point.
-> More details below (slightly stream of consciousness right now...)
+> This project is under development and not useable. Actually it is usable, but only for me. At this point, I am just hacking things into this, as I am actively developing a clean version for new hardware.
+> In the meantime, I am backporting features (crudely), to test them out in my current production system. So ye, feel free to get inspired, just dont think this is a good way to run your code :D
 
 
 

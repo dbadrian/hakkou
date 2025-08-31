@@ -4,19 +4,20 @@
 #include "fsm.h"
 #include "internal_types.h"
 #include "logger.h"
+#include "ota.h"
 #include "platform/platform.h"
 
 ///////TODO: Temp includes
 #include "controller.h"
-// #include "hardware/bme280.h"
 #include "hardware/fan.h"
 #include "hardware/h_ds18x20.h"
 #include "hardware/heater.h"
 #include "hardware/lcd.h"
 #include "hardware/sht31d.h"
 
-// #include "hardware/nec_remote.h"
+#include <hardware/encoder.h>
 
+#include "soc/gpio_num.h"
 #include "task_manager.h"
 
 #include "services/ble/ble.h"
@@ -29,9 +30,9 @@
 #include "esp_http_server.h"  // TODO DELETE
 #include "esp_log.h"
 
+#include <rom/ets_sys.h>  // us delay
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include <rom/ets_sys.h> // us delay
 #include "services/ble/common.h"
 #include "services/ble/gap.h"
 #include "services/ble/gatt_svc.h"
@@ -58,6 +59,9 @@ void setup_hardware() {
   // temporary bring up routine
   LCD* lcd = new LCD();
 
+  xTaskCreate(rotary_encoder_task, "RotaryEncoder",
+              configMINIMAL_STACK_SIZE * 8, NULL, 5, NULL);
+
   // Fan4W* fan = new Fan4W(CONFIG_FAN_PWM_PIN, CONFIG_FAN_TACHO_PIN);
   // event_post(
   //     {.event_type = EventType::FanDuty, .sender = nullptr, .fan_duty = 30});
@@ -77,15 +81,14 @@ void setup_hardware() {
   //     new DS18X20(static_cast<gpio_num_t>(CONFIG_ONEWIRE_PIN), 2000);
 
   // Heater* heater = new Heater(CONFIG_HEATER_PWM_PIN);
+
+  // GPIO for humidifier
+  gpio_configure({
+      .pin = 4,
+      .direction = GPIODirection::OUTPUT,
+      .pull_mode = GPIOPullMode::UP,
+  });
 }
-
-void setup_hardware_debug() {
-  LCD* lcd = new LCD();
-
-  // todo: create a fake food/amb temp setup
-}
-
-
 
 extern "C" void app_main(void) {
   // Handle any unexpected software restarts from before
@@ -93,19 +96,11 @@ extern "C" void app_main(void) {
   // E.g., important GPIO to be in a known safe state.
   // TODO: handle restart
 
-
   // First get important hardware things setup
   platform_initialize({
       .interrupts_enabled = true,
       .i2c_enabled = true,
   });
-
-  gpio_configure({
-    .pin = 4,
-    .direction = GPIODirection::OUTPUT,
-    .pull_mode = GPIOPullMode::UP,
-  });
-  setup_hardware();
 
   // Initialize various subsystems
   // Note(DBA): If this were a normal application, we'd
@@ -119,25 +114,25 @@ extern "C" void app_main(void) {
     vTaskSuspend(NULL);  // TODO: Should probably restart into error mode
   }
 
-  // // bring up wifi
-  // http_server_init();
+  // depends on event system
+  setup_hardware();
 
-  // ESP_ERROR_CHECK(http_server_register_uri_handler({.uri = "/api/v1/system/info",
-  //   .method = HTTP_GET,
-  //   .handler = system_info_get_handler,
-  //   .user_ctx = nullptr}));
+  // bring up wifi
+  http_server_init();
 
-  // wifi_initialize();
-  // // rest_initialize();
+  ESP_ERROR_CHECK(
+      http_server_register_uri_handler({.uri = "/api/v1/system/info",
+                                        .method = HTTP_GET,
+                                        .handler = system_info_get_handler,
+                                        .user_ctx = nullptr}));
 
+  wifi_initialize();
+
+  xTaskCreate(ota_server_task, "ota_server_task", 8192, NULL, 5, NULL);
 
   TaskHandle_t xHandle = NULL;
   xTaskCreate(task_manager, "TaskManager", 4192, nullptr, 20, &xHandle);
   platform_sleep(2000);
-
-  // auto ctrl = new Controller();
-  // // wait for sensors to initialzie...
-  // ctrl->run();
 
   MainMenuFSM* fsm = new MainMenuFSM();
   event_post(Event{

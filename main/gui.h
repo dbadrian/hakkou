@@ -62,19 +62,22 @@ class ProgressScreen : public Screen {
               std::optional<float> food_temp,
               bool food_is_control,
               bool selected_temp,
+              bool editing,
               uint32_t time_passed,
               const std::optional<uint32_t>& total_time) {
+    char edit_or_select = editing ? '+' : '<';
+    HINFO("Ist editing %d", editing);
     if (food_temp) {
       sprintf(screen_buf_[0].data(), "  fT: %4.1fC [%4.1f]%c ",
-              food_temp.value(), temp_setpoint, selected_temp ? '<' : ' ');
+              food_temp.value(), temp_setpoint, selected_temp ? edit_or_select : ' ');
       sprintf(screen_buf_[1].data(), "  aT: %4.1fC         ", amb_temp);
     } else {
       screen_buf_[0] = {};
       sprintf(screen_buf_[1].data(), "  aT: %4.1fC [%4.1f]%c ", amb_temp,
-              temp_setpoint, selected_temp ? '<' : ' ');
+              temp_setpoint, selected_temp ? edit_or_select : ' ');
     }
     sprintf(screen_buf_[2].data(), "  aH: %4.1f%% [%4.1f]%c ", amb_hmd,
-            hmd_setpoint, !selected_temp ? '<' : ' ');
+            hmd_setpoint, !selected_temp ? edit_or_select : ' ');
     if (total_time) {
       sprintf(screen_buf_[3].data(), " %.7s / %.7s ",
               time_to_string_representation(time_passed).data(),
@@ -111,8 +114,7 @@ class ScrollableListScreen : public Screen {
   u16 selected_item{0};
 
  public:
-  ScrollableListScreen(std::array<std::string, N>&& items)
-      : items_(items) {
+  ScrollableListScreen(std::array<std::string, N>&& items) : items_(items) {
     update();
   };
 
